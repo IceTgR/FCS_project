@@ -5,4 +5,4 @@ st.title('F1 Race Strategy Simulator')
 
 st.write('Hello world!')
 
-st.write(f'This shows that the function from the file feature_01.py also works here: {showcase_square(5)}') # you can test that on streamlit
+st.write(f'This shows that the function from the file feature_01.py also works here: 5 squared equals {showcase_square(5)}') # you can test that on streamlit

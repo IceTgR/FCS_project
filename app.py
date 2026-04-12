@@ -13,9 +13,14 @@ st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
 col1, col2, col3 = st.columns(3)
 driver_player = col1.selectbox('Select your driver:', ['Lewis Hamilton', 'Charles Leclerc'])
 
-Track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone', 'Spa-Francorchamps', 'Monza'])
+Track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone'])
 
 tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
+
+if not st.session_state.race_started:
+    st.session_state.race_started = True
+    st.session_state.player = Car(driver_player, Track, tire_start) # create an instance
+    st.rerun
 
 st.write(f'This shows that the function from the file feature_01.py ' 
          f'also works here once we imported it: 5 squared equals {showcase_square(5)}') # you can test that on streamlit

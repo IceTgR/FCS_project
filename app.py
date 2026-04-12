@@ -1,5 +1,5 @@
 import streamlit as st
-from feature_01 import write_chosen_options
+from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from car_monaco import Car_Monaco
 
@@ -33,4 +33,5 @@ if not st.session_state.race_started:
 
 if st.session_state.race_started:
     write_chosen_options()
+    race_simulation()
 

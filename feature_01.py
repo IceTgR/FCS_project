@@ -9,15 +9,12 @@ def write_chosen_options():
         f'starting on {st.session_state.player.tire} tires at the {st.session_state.track} track.')
     
 def race_simulation():
-    if 'lap' not in st.session_state:
-        st.session_state.lap = 1
     st.session_state.player.calculate_lap_time()
-    st.write(f'Current lap time: {st.session_state.player.lap_time}'
-             f'Laps completed: {st.session_state.lap - 1}')
+    st.write(f'Current lap time: {st.session_state.player.lap_time}\n'
+             f'Current lap: {st.session_state.player.lap}')
     
     if st.button('Next Lap'):
-        st.session_state.player.tire_age += 1
-        st.session_state.lap += 1
+        st.session_state.player.advance_lap()
         st.rerun(scope = 'app')
 
 

@@ -9,7 +9,9 @@ class Car:
         self._team = 'Ferrari'
         self.tire = tire
         self.tire_age = 0
+        self.lap = 1
         self.lap_time = 0.0
+        self.total_time = 0.0
         self.safety_car = False
 
     @property
@@ -47,6 +49,18 @@ class Car:
         self._tire_age = value
 
     @property
+    def lap(self):
+        """Return the cars current lap."""
+        return self._lap
+    
+    @lap.setter
+    def lap(self, value):
+        """Set the cars current lap."""
+        if value < 1:
+            raise ValueError("Lap must be at least 1.")
+        self._lap = value
+
+    @property
     def lap_time(self):
         """Return the cars lap time."""
         return self._lap_time
@@ -59,6 +73,18 @@ class Car:
         self._lap_time = value
 
     @property
+    def total_time(self):      
+        """Return the cars total time."""
+        return self._total_time
+    
+    @total_time.setter
+    def total_time(self, value):
+        """Set the cars total time."""
+        if value < 0:
+            raise ValueError("Total time cannot be negative.")
+        self._total_time = value
+
+    @property
     def safety_car(self):
         """Return whether the car is under safety car conditions."""
         return self._safety_car
@@ -69,6 +95,12 @@ class Car:
         if not isinstance(value, bool):
             raise ValueError("Safety car must be a boolean value.")
         self._safety_car = value
+
+    def advance_lap(self):
+        """Simulate the car advancing to the next lap."""
+        self.total_time += self.lap_time
+        self.lap += 1
+        self.tire_age += 1
 
     def box(self, new_tire):
         """Simulate the car going to the box and changing tires."""

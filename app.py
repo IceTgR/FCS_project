@@ -27,8 +27,10 @@ if not st.session_state.race_started:
         st.session_state.race_started = True
         if st.session_state.track == 'Monaco':
             st.session_state.player = Car_Monaco(driver_player, tire_start) # create an instance for Monaco
+            st.session_state.total_laps = 78 # set total laps for Monaco
         elif st.session_state.track == 'Silverstone':
             st.session_state.player = Car(driver_player, tire_start) # create an instance for Silverstone
+            st.session_state.total_laps = 52 # set total laps for Silverstone
         st.rerun(scope='app')
 
 if st.session_state.race_started:

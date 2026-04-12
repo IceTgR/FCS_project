@@ -7,6 +7,10 @@ st.write(f'You are now in the seat of a F1 race strategist!\n'
          f' Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
 
+driver_player = st.selectbox('Select your driver:', ['Lewis Hamilton', 'Max Verstappen', 'Charles Leclerc', 'Lando Norris'])
+
+Track = st.selectbox('Select the track:', ['Monaco', 'Silverstone', 'Spa-Francorchamps', 'Monza'])
+
 tire_start = st.radio('Choose your starting tire:', ['Soft', 'Medium', 'Hard'])
 
 st.write(f'This shows that the function from the file feature_01.py ' 

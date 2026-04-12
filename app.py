@@ -17,10 +17,6 @@ Track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone', 'Spa-Franc
 
 tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
 
-# Create an instance of the Car class based on the selected track and driver
-if Track == 'Monaco':
-    player = Car_Monaco(driver_player, tire_start)
-
 st.write(f'This shows that the function from the file feature_01.py ' 
          f'also works here once we imported it: 5 squared equals {showcase_square(5)}') # you can test that on streamlit
 

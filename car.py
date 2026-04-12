@@ -13,6 +13,7 @@ class Car:
         self.lap_time = 0.0
         self.total_time = 0.0
         self.safety_car = False
+        self.pitstop_counter = 0
 
     @property
     def driver(self):
@@ -96,6 +97,18 @@ class Car:
             raise ValueError("Safety car must be a boolean value.")
         self._safety_car = value
 
+    @property
+    def pitstop_counter(self):        
+        """Return the number of pitstops the car has made."""
+        return self._pitstop_counter   
+
+    @pitstop_counter.setter
+    def pitstop_counter(self, value):
+        """Set the number of pitstops the car has made."""
+        if value < 0:
+            raise ValueError("Pitstop counter cannot be negative.")
+        self._pitstop_counter = value 
+
     def advance_lap(self):
         """Simulate the car advancing to the next lap."""
         self.total_time += self.lap_time
@@ -108,8 +121,7 @@ class Car:
         self.tire_age = 0
         self.total_time += self.lap_time # The additional time for pitstop is added at subclass
         self.lap += 1
-
-
+        self.pitstop_counter += 1
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

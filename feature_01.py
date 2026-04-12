@@ -9,9 +9,10 @@ def write_chosen_options():
         f'starting on {st.session_state.player.tire} tires at the {st.session_state.track} track.')
     
 def race_simulation():
-    st.session_state.player.calculate_lap_time()
-    st.write(f'Current lap time: {st.session_state.player.lap_time}\n'
+    st.write(f'Last lap time: {st.session_state.player.lap_time if st.session_state.player.lap > 1 else 'this your first lap'}\n'
              f'Current lap: {st.session_state.player.lap}')
+    
+    st.session_state.player.calculate_lap_time()
     
     if st.button('Stay Out'):
         st.session_state.player.advance_lap()

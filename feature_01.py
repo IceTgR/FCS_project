@@ -1,7 +1,6 @@
 # this is the feature that runs the simulation
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from car import Car
 from car_monaco import Car_Monaco
 from car_silverstone import Car_Silverstone

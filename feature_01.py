@@ -12,7 +12,7 @@ def race_simulation():
     st.write(f'Last lap time: {st.session_state.player.lap_time if st.session_state.player.lap > 1 else 'this your first lap'}\n'
             f'Current lap: {st.session_state.player.lap if st.session_state.player.lap <= st.session_state.total_laps else 'finished'}')
     
-    st.write(f'Your last laptimes were: {st.session_state.player.race_history[-1:-5:-1] 
+    st.write(f'Your last laptimes were: {st.session_state.player.race_history[-1:-6:-1] 
                                          if len(st.session_state.player.race_history) > 5 
                                          else st.session_state.player.race_history[::-1]}')
 

@@ -12,6 +12,10 @@ def race_simulation():
     st.write(f'Last lap time: {st.session_state.player.lap_time if st.session_state.player.lap > 1 else 'this your first lap'}\n'
             f'Current lap: {st.session_state.player.lap if st.session_state.player.lap <= st.session_state.total_laps else 'finished'}')
     
+    st.write(f'Your last laptimes were: {st.session_state.player.race_history[-1:-5] 
+                                         if len(st.session_state.player.race_history) > 5 
+                                         else st.session_state.player.race_history[::-1]}')
+
     if st.session_state.player.lap == st.session_state.total_laps + 1:
         if st.session_state.player.pitstop_counter == 0:
             st.write('You have been disqualified for not making a pit stop!')
@@ -29,6 +33,8 @@ def race_simulation():
         if st.button('Pit Stop'):
             st.session_state.player.box(new_tire)
             st.rerun(scope = 'app')
+
+    
 
 
 

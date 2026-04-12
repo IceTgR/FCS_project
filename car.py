@@ -11,6 +11,7 @@ class Car:
         self.tire_age = 0
         self.lap = 1
         self.lap_time = 0.0
+        self.race_history = []
         self.total_time = 0.0
         self.safety_car = False
         self.pitstop_counter = 0
@@ -74,6 +75,18 @@ class Car:
         self._lap_time = value
 
     @property
+    def race_history(self):
+        """Return the race history of the car (a list of lap times)."""
+        return self._race_history
+    
+    @race_history.setter
+    def race_history(self, value):
+        """Set the race history of the car (a list of lap times)."""
+        if not isinstance(value, list):
+            raise ValueError("Race history must be a list of lap times.")
+        self._race_history = value
+
+    @property
     def total_time(self):      
         """Return the cars total time."""
         return self._total_time
@@ -114,6 +127,7 @@ class Car:
         self.total_time += self.lap_time
         self.lap += 1
         self.tire_age += 1
+        self.race_history.append(self.lap_time)
 
     def box(self, new_tire):
         """Simulate the car going to the box and changing tires."""
@@ -122,6 +136,7 @@ class Car:
         self.total_time += self.lap_time # The additional time for pitstop is added at subclass
         self.lap += 1
         self.pitstop_counter += 1
+        self.race_history.append(self.lap_time)
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

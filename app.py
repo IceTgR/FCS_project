@@ -11,7 +11,7 @@ st.title('F1 Race Strategy Simulator')
 
 if not st.session_state.race_started:
     st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
-         f' Prepare yourself to make crucial decisions on pit stops, tire choices, and '
+         f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
 
 

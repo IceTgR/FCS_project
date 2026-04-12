@@ -17,8 +17,9 @@ def race_simulation():
         st.session_state.player.advance_lap()
         st.rerun(scope = 'app')
 
+    new_tire = st.radio('Choose your tire incase you want to pit', ['soft', 'medium', 'hard'])
     if st.button('Pit Stop'):
-        st.session_state.player.box()
+        st.session_state.player.box(new_tire)
         st.rerun(scope = 'app')
 
 

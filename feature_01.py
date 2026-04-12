@@ -13,7 +13,7 @@ def race_simulation():
             f'Current lap: {st.session_state.player.lap if st.session_state.player.lap <= st.session_state.total_laps else 'finished'}')
     
     if st.session_state.player.lap == st.session_state.total_laps + 1:
-        if st.session_state.player.pitstop_counter == 0:
+        if st.session_state.player.pitstop_counter = 0:
             st.write('You have been disqualified for not making a pit stop!')
         else:
             st.write('Congratulations, you have finished the race!')

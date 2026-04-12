@@ -3,7 +3,7 @@ from feature_01 import write_chosen_options
 from car import Car
 from car_monaco import Car_Monaco
 
-if race_started not in st.session_state: # to check if race has started, if not, initialize it to False
+if 'race_started' not in st.session_state: # to check if race has started, if not, initialize it to False
     st.session_state.race_started = False
 
 st.title('F1 Race Strategy Simulator')

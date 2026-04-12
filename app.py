@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from car_monaco import Car_Monaco

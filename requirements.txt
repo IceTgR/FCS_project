@@ -1,3 +1,4 @@
 # add every additional library we need to run the app here
 streamlit
-pandas #check if we actually need this
+pandas
+matplotlib.pyplot

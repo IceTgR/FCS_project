@@ -1,5 +1,7 @@
 # this is the feature that runs the simulation
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 from car import Car
 from car_monaco import Car_Monaco
 from car_silverstone import Car_Silverstone
@@ -30,8 +32,11 @@ def race_simulation():
             st.session_state.player.box(new_tire)
             st.rerun(scope = 'app')
 
-    
+    st.subheader('Race History')
+    history = pd.DataFrame(st.session_state.player.race_history, columns=['Lap', 'Lap Time', 'Tire', 'Tire Age', 'Pitstop'])
+    st.table(history)
 
+    
 
 
 

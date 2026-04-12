@@ -29,7 +29,7 @@ if not st.session_state.race_started:
             st.session_state.player = Car_Monaco(driver_player, tire_start) # create an instance for Monaco
         elif st.session_state.track == 'Silverstone':
             st.session_state.player = Car(driver_player, tire_start) # create an instance for Silverstone
-        st.rerun
+        st.rerun(scope='app')
 
 if st.session_state.race_started:
     write_chosen_options()

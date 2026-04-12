@@ -1,5 +1,8 @@
-# this is just to show that we can use different files to work on different features 
-# (and actually should to avoid merge conflicts)
+# this is the feature that runs the simulation
 
-def showcase_square(number):
-    return number ** 2
+def write_chosen_options():
+    st.write(f'You have selected {st.session_state.player.driver} as your driver, '
+        f'starting on {st.session_state.player.tire} tires at the {track} track.')
+
+
+

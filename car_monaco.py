@@ -4,9 +4,9 @@ from car import Car
 class Car_Monaco(Car):
     """This is the Car_Monaco class which defines a Class for cars on monaco, while the Class inherits from Car"""
     
-    def __init__(self, driver, tire, tire_age):
+    def __init__(self, driver, tire):
         """This is the constructor for the Car_Monaco class which defines a Class for cars on monaco, while the Class inherits from Car"""
-        super().__init__(driver, tire, tire_age)
+        super().__init__(driver, tire)
 
     def calculate_lap_time(self):
         """This is the method which calculates the lap time for the car on monaco"""

@@ -125,18 +125,18 @@ class Car:
     def advance_lap(self):
         """Simulate the car advancing to the next lap."""
         self.total_time += self.lap_time
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop:': 'Yes'})
         self.lap += 1
         self.tire_age += 1
-        self.race_history.append(self.lap_time)
 
     def box(self, new_tire):
         """Simulate the car going to the box and changing tires."""
         self.tire = new_tire
         self.tire_age = 0
         self.total_time += self.lap_time # The additional time for pitstop is added at subclass
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop:': 'Yes'})
         self.lap += 1
         self.pitstop_counter += 1
-        self.race_history.append(self.lap_time)
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

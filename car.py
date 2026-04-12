@@ -106,6 +106,10 @@ class Car:
         """Simulate the car going to the box and changing tires."""
         self.tire = new_tire
         self.tire_age = 0
+        self.total_time += self.lap_time # The additional time for pitstop is added at subclass
+        self.lap += 1
+
+
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

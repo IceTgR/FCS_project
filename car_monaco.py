@@ -28,7 +28,8 @@ class Car_Monaco(Car):
 
     def box(self, new_tire):
         """This is the method which simulates a pit stop for the car on monaco"""
-        super().box(new_tire)
         self.lap_time += 20.0  # Add time for pit stop, must be adapted based on ML
+        super().box(new_tire)
+
 
     

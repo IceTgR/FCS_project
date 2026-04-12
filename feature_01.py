@@ -13,8 +13,12 @@ def race_simulation():
     st.write(f'Current lap time: {st.session_state.player.lap_time}\n'
              f'Current lap: {st.session_state.player.lap}')
     
-    if st.button('Next Lap'):
+    if st.button('Stay Out'):
         st.session_state.player.advance_lap()
+        st.rerun(scope = 'app')
+
+    if st.button('Pit Stop'):
+        st.session_state.player.box()
         st.rerun(scope = 'app')
 
 

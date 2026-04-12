@@ -33,7 +33,7 @@ def race_simulation():
 
     st.subheader('Race History')
     history = pd.DataFrame(st.session_state.player.race_history, columns=['Lap', 'Lap Time', 'Tire', 'Tire Age', 'Pitstop'])
-    st.dataframe(history)
+    st.table(history)
 
     
 

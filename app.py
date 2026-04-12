@@ -7,11 +7,13 @@ st.write(f'You are now in the seat of a F1 race strategist!\n'
          f' Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
 
-driver_player = st.selectbox('Select your driver:', ['Lewis Hamilton', 'Max Verstappen', 'Charles Leclerc', 'Lando Norris'])
 
-Track = st.selectbox('Select the track:', ['Monaco', 'Silverstone', 'Spa-Francorchamps', 'Monza'])
+col1, col2, col3 = st.columns(3)
+driver_player = col1.selectbox('Select your driver:', ['Lewis Hamilton', 'Max Verstappen', 'Charles Leclerc', 'Lando Norris'])
 
-tire_start = st.radio('Choose your starting tire:', ['Soft', 'Medium', 'Hard'])
+Track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone', 'Spa-Francorchamps', 'Monza'])
+
+tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
 
 st.write(f'This shows that the function from the file feature_01.py ' 
          f'also works here once we imported it: 5 squared equals {showcase_square(5)}') # you can test that on streamlit

@@ -22,7 +22,3 @@ if not st.session_state.race_started:
     st.session_state.player = Car(driver_player, Track, tire_start) # create an instance
     st.rerun
 
-st.write(f'This shows that the function from the file feature_01.py ' 
-         f'also works here once we imported it: 5 squared equals {showcase_square(5)}') # you can test that on streamlit
-
-# whats goodie

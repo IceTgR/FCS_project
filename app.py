@@ -19,15 +19,15 @@ if not st.session_state.race_started:
     col1, col2, col3 = st.columns(3)
     driver_player = col1.selectbox('Select your driver:', ['Lewis Hamilton', 'Charles Leclerc'])
 
-    track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone'])
+    st.session_state.track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone'])
 
     tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
 
     if st.button('Start the simulation'):
         st.session_state.race_started = True
-        if track == 'Monaco':
+        if st.session_state.track == 'Monaco':
             st.session_state.player = Car_Monaco(driver_player, tire_start) # create an instance for Monaco
-        if track == 'Silverstone':
+        elif st.session_state.track == 'Silverstone':
             st.session_state.player = Car(driver_player, tire_start) # create an instance for Silverstone
         st.rerun
 

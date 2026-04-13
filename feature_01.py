@@ -35,7 +35,7 @@ def race_simulation():
     history = pd.DataFrame(st.session_state.player.race_history, columns=['Lap', 'Lap Time', 'Tire', 'Tire Age', 'Pitstop'])
 
     st.metric('Lap Time Development', (f"{st.session_state.player.race_history[-1]['Lap Time']:.2f} seconds" if st.session_state.player.lap > 1 else 0),
-            delta = ((st.session_state.player.race_history[-1]['Lap Time'] - st.session_state.player.race_history[-2]['Lap Time']) if st.session_state.player.lap > 2 else 'n.a.'),
+            delta = ((st.session_state.player.race_history[-1]['Lap Time'] - st.session_state.player.race_history[-2]['Lap Time']) if st.session_state.player.lap > 2 else st.session_state.player.race_history[-1]['Lap Time'] if st.session_state.player.lap == 2 else 'n.a.'),
             chart_data = history['Lap Time'], chart_type = 'line', border = True, delta_color = 'inverse')
     
     st.table(history) if st.session_state.player.lap > 1 else st.write('No history yet, this is your first lap!')

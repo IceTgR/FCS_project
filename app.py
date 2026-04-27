@@ -5,11 +5,13 @@ from car import Car
 from car_monaco import Car_Monaco
 from car_silverstone import Car_Silverstone
 
+# Track whether the simulation has been started in the current Streamlit session.
 if 'race_started' not in st.session_state: # to check if race has started, if not, initialize it to False
     st.session_state.race_started = False
 
 st.title('F1 Race Strategy Simulator')
 
+# Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
     st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
          f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
@@ -25,6 +27,7 @@ if not st.session_state.race_started:
 
     tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
 
+    # Build the correct car object based on track and begin the race loop.
     if st.button('Start the simulation'):
         st.session_state.race_started = True
         if st.session_state.track == 'Monaco':
@@ -35,6 +38,7 @@ if not st.session_state.race_started:
             st.session_state.total_laps = 52 # set total laps for Silverstone
         st.rerun(scope='app')
 
+# Race screen: show selected options and advance race state lap by lap.
 if st.session_state.race_started:
     write_chosen_options()
     race_simulation()

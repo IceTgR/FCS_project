@@ -4,7 +4,7 @@ from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from car_monaco import Car_Monaco
 from car_silverstone import Car_Silverstone
-from InterfaceDM.py import main
+from InterfaceDM import main
 
 main()
 

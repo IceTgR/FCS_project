@@ -5,7 +5,7 @@ import os
 
 
 
-def fastf1_to_sqlite(years, track_list, team_list):
+def fastf1_to_sql(years, track_list, team_list):
     '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''
 
     # Verzeichnis für Cache erstellen, damit die Daten lokal gespeichert werden und es somit schneller geht

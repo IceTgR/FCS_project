@@ -3,4 +3,3 @@ streamlit
 pandas
 fastf1
 plotly
-io

@@ -9,6 +9,8 @@ if not os.path.exists('f1_cache'):
 fastf1.Cache.enable_cache('f1_cache')
 
 def fastf1_to_sqlite(years, track_list, team_list):
+    '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''
+# existierende db löschen, falls sie existiert
     if os.path.exists('f1_project.db'):
         os.remove('f1_project.db')
         print(f"Existierende Datenbank wurde erfolgreich gelöscht. Neue wird erstellt. Dies kann einige Minuten dauern...")
@@ -67,10 +69,3 @@ def fastf1_to_sqlite(years, track_list, team_list):
                 print(f"Skip {year} {event['EventName']}")
     
     conn.close()
-
-def reset_database(db_path='f1_project.db'):
-    if os.path.exists(db_path):
-        os.remove(db_path)
-        print(f"Datenbank '{db_path}' wurde erfolgreich gelöscht.")
-    else:
-        print("Datenbank existiert nicht.")

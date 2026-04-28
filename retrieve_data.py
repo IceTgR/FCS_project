@@ -3,14 +3,17 @@ import sqlite3
 import pandas as pd
 import os
 
-# Verzeichnis für Cache erstellen
-if not os.path.exists('f1_cache'):
-    os.makedirs('f1_cache')
-fastf1.Cache.enable_cache('f1_cache')
+
 
 def fastf1_to_sqlite(years, track_list, team_list):
     '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''
-# existierende db löschen, falls sie existiert
+
+    # Verzeichnis für Cache erstellen, damit die Daten lokal gespeichert werden und es somit schneller geht
+    if not os.path.exists('f1_cache'):
+        os.makedirs('f1_cache')
+    fastf1.Cache.enable_cache('f1_cache')
+
+    # existierende db löschen, falls sie existiert
     if os.path.exists('f1_project.db'):
         os.remove('f1_project.db')
         print(f"Existierende Datenbank wurde erfolgreich gelöscht. Neue wird erstellt. Dies kann einige Minuten dauern...")
@@ -34,8 +37,7 @@ def fastf1_to_sqlite(years, track_list, team_list):
                 if laps.empty: continue
 
                 weather = session.weather_data
-                # Wir runden die Zeitstempel, um sie mit den Laps zu matchen
-                weather['Time'] = weather['Time'].dt.total_seconds()
+                weather['Time'] = weather['Time'].dt.total_seconds() # Wir runden die Zeitstempel, um sie mit den Laps zu matchen
                 
                 # Hilfsfunktion: Gab es Regen während dieser Runde?
                 def check_rain(lap_row):

@@ -2,7 +2,6 @@
 streamlit
 pandas
 fastf1
-sqlite3
 os
 plotly
 random

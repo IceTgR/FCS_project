@@ -2,7 +2,6 @@
 streamlit
 pandas
 fastf1
-os
 plotly
 random
 io

@@ -4,3 +4,6 @@ pandas
 fastf1
 sqlite3
 os
+plotly.graph_objects
+random
+io

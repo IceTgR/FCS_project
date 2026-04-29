@@ -31,6 +31,33 @@ if not st.session_state.race_started:
 
     tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
 
+    # --- NEW ML STRATEGIST WINDOW HERE ---
+    # Determine the laps for the AI simulation before the race starts
+    sim_laps = 78 if st.session_state.track == 'Monaco Grand Prix' else 52
+    
+    with st.expander("🏎️ ML Strategist Briefing", expanded=True):
+        st.write("Let our AI simulate the race to find your mathematically fastest pit stop strategy!")
+        
+        if st.button("Ask the AI for the Optimal Pit Lap"):
+            with st.spinner("Simulating race times..."):
+                try:
+                    best_lap = find_optimal_pit_lap(
+                        track_name=st.session_state.track, 
+                        total_laps=sim_laps,             
+                        team=team_player, 
+                        start_compound=tire_start, 
+                        next_compound='HARD',      # Assuming they switch to hards
+                        air_temp=25.0, 
+                        pit_window_start=10, 
+                        pit_window_end=sim_laps - 15 # Don't pit at the very end
+                    )
+                    st.success(f"**Optimal Strategy Found:** The AI recommends pitting on Lap {best_lap}!")
+                except FileNotFoundError:
+                    st.error("Model not found! Make sure to click 'Train Models Now' first.")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+    # -------------------------------------
+
     # Build the correct car object based on track and begin the race loop.
     if st.button('Start the simulation'):
         st.session_state.race_started = True

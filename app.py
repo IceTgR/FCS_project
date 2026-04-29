@@ -7,7 +7,7 @@ from InterfaceDM import main
 from data_preprocessing import get_preprocessed_datasets
 from ML_lap_times import train_dry_models
 
-main()
+#main()
 
 # Track whether the simulation has been started in the current Streamlit session.
 if 'race_started' not in st.session_state: # to check if race has started, if not, initialize it to False

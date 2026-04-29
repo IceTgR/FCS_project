@@ -25,7 +25,7 @@ if not st.session_state.race_started:
     # ML Model Training Section
     with st.expander("🤖 Train ML Models"):
         st.write("""Train and save ML models for lap time prediction.
-                 You need to do this the first time you run the app""")
+                 You need to do this the first time you run the app, or if you want to retrain the models.""")
         
         # Check if models exist
         models_exist = (

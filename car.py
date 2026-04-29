@@ -160,11 +160,11 @@ class Car:
         """
         return random.uniform(0.6, 1.4)
 
-    def box(self, new_tire, safety_event_status=None):
+    def box(self, new_tire, safety_event_status=None, pitstop_multiplier=1.0):
         """Simulate the car going to the box and changing tires."""
         # The pit stop is counted into the inlap time, so we add the full
         # combined penalty before storing the lap in the race history.
-        self.lap_time += self.inlap_penalty()
+        self.lap_time += self.inlap_penalty() * pitstop_multiplier
         
         # Store the old tire info before changing it, for the race history entry
         old_tire = self.tire

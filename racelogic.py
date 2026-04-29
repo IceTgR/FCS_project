@@ -7,29 +7,19 @@ from car import Car
 
 
 def roll_safety_event():
-    """Manage safety event duration and randomly assign new events.
+    """Start a new safety event if no event is currently active.
     
-    Decrements the current event duration each lap and clears it when expired.
-    Only rolls for new events if no event is currently active.
-    Safety Car typically lasts 3-6 laps, VSC typically 2-4 laps.
-    Duration is stored in session state.
+    Duration handling happens after the lap is stored so the current lap can
+    still see the event that was active while it was driven.
     """
-    # Initialize duration if needed
     if not hasattr(st.session_state, 'safety_event_duration'):
         st.session_state.safety_event_duration = 0
     if not hasattr(st.session_state, 'safety_event_status'):
         st.session_state.safety_event_status = None
-    
-    # Decrement existing event duration, if there is an existing event
-    if st.session_state.safety_event_duration > 0:
-        st.session_state.safety_event_duration -= 1
-        if st.session_state.safety_event_duration == 0:
-            st.session_state.safety_event_status = None
-    
-    # Only roll for new events if no event is currently active
+
     if st.session_state.safety_event_status is not None:
         return
-    
+
     event_roll = random.random()
 
     if event_roll < 0.015:
@@ -41,6 +31,45 @@ def roll_safety_event():
     else:
         st.session_state.safety_event_status = None
         st.session_state.safety_event_duration = 0
+
+
+def resolve_safety_event():
+    """Count down the active safety event after a lap has been recorded."""
+    if st.session_state.safety_event_status is None:
+        return
+
+    if st.session_state.safety_event_duration > 0:
+        st.session_state.safety_event_duration -= 1
+
+    if st.session_state.safety_event_duration == 0:
+        st.session_state.safety_event_status = None
+
+
+def get_safety_event_lap_multiplier():
+    """Return a lap-time multiplier for the active safety event."""
+    current_event = st.session_state.safety_event_status if hasattr(st.session_state, 'safety_event_status') else None
+
+    if current_event == 'SAFETYCAR':
+        return 1.65
+    if current_event == 'VSC':
+        return 1.30
+    return 1.0
+
+
+def get_safety_event_pitstop_multiplier():
+    """Return a pit-stop multiplier for the active safety event."""
+    current_event = st.session_state.safety_event_status if hasattr(st.session_state, 'safety_event_status') else None
+
+    if current_event == 'SAFETYCAR':
+        return 0.58
+    if current_event == 'VSC':
+        return 0.78
+    return 1.0
+
+
+def apply_safety_event_effect(car):
+    """Apply the current race-control effect to the predicted lap time."""
+    car.lap_time *= get_safety_event_lap_multiplier()
 
 # Show the fixed choices made before the race starts.
 def write_chosen_options():
@@ -72,7 +101,9 @@ def race_simulation():
         # Continue without pitting.
         if st.button('Stay Out'):
             roll_safety_event()
+            apply_safety_event_effect(st.session_state.player)
             st.session_state.player.advance_lap(st.session_state.safety_event_status)
+            resolve_safety_event()
             st.rerun(scope = 'app')
 
         # Let user pick next tire compound for an optional pit stop.
@@ -80,7 +111,13 @@ def race_simulation():
         # Enter pit lane and switch to the selected tire.
         if st.button('Pit Stop'):
             roll_safety_event()
-            st.session_state.player.box(new_tire, st.session_state.safety_event_status)
+            apply_safety_event_effect(st.session_state.player)
+            st.session_state.player.box(
+                new_tire,
+                st.session_state.safety_event_status,
+                pitstop_multiplier=get_safety_event_pitstop_multiplier(),
+            )
+            resolve_safety_event()
             st.rerun(scope = 'app')
 
     # Show race data in table and chart form.

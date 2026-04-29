@@ -5,14 +5,18 @@ import os
 
 def load_track_model(track_name, condition="dry"):
     """Loads the trained ML model and its training columns for a specific track."""
-    model_path = f"models/{condition}/rf_model_{track_name}.pkl"
-    cols_path = f"models/{condition}/train_cols_{track_name}.pkl"
+    # Convert "Monaco Grand Prix" to "Monaco_Grand_Prix" to match the saved files
+    track_id = track_name.replace(' ', '_') 
+    
+    # Update the paths to match what ML_lap_times.py is saving
+    model_path = f"models/{condition}/rf_{track_id}.pkl"
+    cols_path = f"models/{condition}/cols_{track_id}.pkl"
     
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model for {track_name} not found. Train it first!")
+        raise FileNotFoundError(f"Model for {track_name} not found at {model_path}. Train it first!")
         
     model = joblib.load(model_path)
-    train_columns = joblib.load(cols_path) # We need this to match the dummy variables (Teams, Compounds)
+    train_columns = joblib.load(cols_path) 
     
     return model, train_columns
 

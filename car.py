@@ -164,10 +164,18 @@ class Car:
         # The pit stop is counted into the inlap time, so we add the full
         # combined penalty before storing the lap in the race history.
         self.lap_time += self.inlap_penalty()
+        
+        # Store the old tire info before changing it, for the race history entry
+        old_tire = self.tire
+        old_tire_age = self.tire_age
+        
+        # Now change the tire
         self.tire = new_tire
         self.tire_age = 0
         self.total_time += self.lap_time
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': 'Inlap'})
+        
+        # Record the inlap with the OLD tire and OLD tire age
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Rundenart': 'Inlap'})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

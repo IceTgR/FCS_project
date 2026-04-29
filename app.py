@@ -27,21 +27,7 @@ if not st.session_state.race_started:
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
     col1, col2, col3 = st.columns(3)
-    st.write("### 🏎️ Select Your Team")
-    team_player = option_menu(
-        menu_title=None,  # No title needed
-        options=['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'],
-        icons=['shield-shaded', 'brightness-high', 'bullseye', 'speedometer2', 'flag'], 
-        menu_icon="cast", 
-        default_index=0, 
-        orientation="horizontal",
-        styles={
-            "container": {"padding": "0!important", "background-color": "#fafafa"},
-            "icon": {"color": "orange", "font-size": "25px"}, 
-            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
-            "nav-link-selected": {"background-color": "#ff4b4b"},
-        }
-    )
+    team_player = col1.selectbox('Select your team:', ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'])
 
 
     

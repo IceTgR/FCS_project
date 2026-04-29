@@ -12,7 +12,7 @@ def roll_safety_event(car):
 
     if event_roll < 0.08:
         car.safety_event_status = 'SAFETYCAR'
-    elif 'event_roll' < 0.24:
+    elif event_roll < 0.24:
         car.safety_event_status = 'VSC'
     else:
         car.safety_event_status = None

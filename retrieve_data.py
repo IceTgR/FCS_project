@@ -59,7 +59,10 @@ def fastf1_to_sql(years, track_list, team_list):
                 laps['IsPitstop'] = laps['PitInTime'].notnull().astype(int)
 
                 # Bereinigen und Speichern
-                db_data = laps.dropna(subset=['LapTimeSec'])[[
+                db_data = laps.dropna(subset=[
+                    'Year', 'Track', 'Team', 'LapNumber', 'LapTimeSec', 
+                    'Compound', 'TyreLife', 'AirTemp', 'IsRaining', 'IsOutlap', 'IsPitstop'
+                ])[[
                     'Year', 'Track', 'Team', 'LapNumber', 'LapTimeSec', 
                     'Compound', 'TyreLife', 'AirTemp', 'IsRaining', 'IsOutlap', 'IsPitstop'
                 ]]

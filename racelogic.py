@@ -77,7 +77,7 @@ def write_chosen_options():
     st.write(f'You have selected {st.session_state.player.team} as your team, '
         f'starting on {st.session_state.player.tire} tires at the {st.session_state.track} track.')
     if hasattr(st.session_state, 'opponents'):
-        st.write(f'The field now contains {len(st.session_state.opponents)} AI opponents.')
+        st.write(f'Das Feld hat nun {len(st.session_state.opponents)} computergesteuerte Gegner.')
     
 def race_simulation():
     # Display the current race status at the top of the screen.

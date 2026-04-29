@@ -193,25 +193,25 @@ class Car:
         """
         wear_profiles = {
             'SOFT': {
-                'threshold': 5,
-                'quadratic': 0.022,
-                'linear': 0.08,
-                'random_low': 0.95,
-                'random_high': 1.05,
-            },
-            'MEDIUM': {
                 'threshold': 8,
-                'quadratic': 0.016,
-                'linear': 0.06,
+                'quadratic': 0.015,
+                'linear': 0.08,
                 'random_low': 0.96,
                 'random_high': 1.04,
             },
-            'HARD': {
+            'MEDIUM': {
                 'threshold': 12,
-                'quadratic': 0.010,
-                'linear': 0.04,
+                'quadratic': 0.012,
+                'linear': 0.06,
                 'random_low': 0.97,
                 'random_high': 1.03,
+            },
+            'HARD': {
+                'threshold': 18,
+                'quadratic': 0.008,
+                'linear': 0.04,
+                'random_low': 0.98,
+                'random_high': 1.02,
             },
         }
         # Use the current tire compound directly..

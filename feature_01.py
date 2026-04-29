@@ -10,9 +10,9 @@ def roll_safety_event(car):
     """Randomly assign a race control event without changing lap time yet."""
     event_roll = random.random()
 
-    if event_roll < 0.08:
+    if event_roll < 0.015:
         car.safety_event_status = 'SAFETYCAR'
-    elif event_roll < 0.24:
+    elif event_roll < 0.04:
         car.safety_event_status = 'VSC'
     else:
         car.safety_event_status = None
@@ -47,21 +47,21 @@ def race_simulation():
     
         # Continue without pitting.
         if st.button('Stay Out'):
-            st.session_state.player.advance_lap()
             roll_safety_event(st.session_state.player)
+            st.session_state.player.advance_lap()
             st.rerun(scope = 'app')
 
         # Let user pick next tire compound for an optional pit stop.
         new_tire = st.radio('Choose your tire incase you want to pit', ['SOFT', 'MEDIUM', 'HARD'])
         # Enter pit lane and switch to the selected tire.
         if st.button('Pit Stop'):
-            st.session_state.player.box(new_tire)
             roll_safety_event(st.session_state.player)
+            st.session_state.player.box(new_tire)
             st.rerun(scope = 'app')
 
     # Show race data in table and chart form.
     st.subheader('Race History')
-    history = pd.DataFrame(st.session_state.player.race_history, columns=['Lap', 'Lap Time', 'Tire', 'Tire Age', 'Rundenart'])
+    history = pd.DataFrame(st.session_state.player.race_history, columns=['Lap', 'Lap Time', 'Tire', 'Tire Age', 'Rundenart', 'Kommentar'])
 
     st.metric('Lap Time Development', (f"{st.session_state.player.race_history[-1]['Lap Time']:.2f} seconds" if st.session_state.player.lap > 1 else 0),
             delta = ((st.session_state.player.race_history[-1]['Lap Time'] - st.session_state.player.race_history[-2]['Lap Time']) if st.session_state.player.lap > 2 else 'n.a.'),

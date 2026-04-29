@@ -113,21 +113,10 @@ class Car:
     @safety_event_status.setter
     def safety_event_status(self, value):
         """Set the current safety event status.
-
-        Allowed values are None, 'VSC', 'SAFETYCAR', 'safetycar', and 'safety_car'.
-        """
-        if value is None:
-            self._safety_event_status = None
-            return
-
-        if not isinstance(value, str):
-            raise ValueError("Safety event status must be None or a string value.")
-
-        normalized_value = value.replace('_', '').upper()
-        if normalized_value not in ['VSC', 'SAFETYCAR']:
+        The only valid values are None, 'VSC' and 'SAFETYCAR'."""
+        if value not in [None, 'VSC', 'SAFETYCAR']:
             raise ValueError("Safety event status must be None, 'VSC', or 'SAFETYCAR'.")
-
-        self._safety_event_status = normalized_value
+        self._safety_event_status = value
 
     @property
     def pitstop_counter(self):        
@@ -141,12 +130,26 @@ class Car:
             raise ValueError("Pitstop counter cannot be negative.")
         self._pitstop_counter = value 
 
+    def _race_comment(self, lap_type):
+        """Build a human-readable comment for the race log."""
+        comment_parts = []
+
+        if lap_type != 'Normal':
+            comment_parts.append(lap_type)
+
+        if self.safety_event_status == 'SAFETYCAR':
+            comment_parts.append('Safety Car')
+        elif self.safety_event_status == 'VSC':
+            comment_parts.append('VSC')
+
+        return ', '.join(comment_parts)
+
     def advance_lap(self):
         """Simulate the car advancing to the next lap."""
         self.total_time += self.lap_time
         # Determine lap type: Outlap if coming out of pit stop, Normal otherwise
         lap_type = 'Outlap' if self._outlap_pending else 'Normal'
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': lap_type})
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': lap_type, 'Kommentar': self._race_comment(lap_type)})
         if self._outlap_pending:
             self._outlap_pending = False
         self.lap += 1
@@ -187,7 +190,7 @@ class Car:
         self.total_time += self.lap_time
         
         # Record the inlap with the OLD tire and OLD tire age
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Rundenart': 'Inlap'})
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Rundenart': 'Inlap', 'Kommentar': self._race_comment('Inlap')})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

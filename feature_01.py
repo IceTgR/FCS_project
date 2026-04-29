@@ -2,8 +2,6 @@
 import streamlit as st
 import pandas as pd
 from car import Car
-from car_monaco import Car_Monaco
-from car_silverstone import Car_Silverstone
 
 # Show the fixed choices made before the race starts.
 def write_chosen_options():

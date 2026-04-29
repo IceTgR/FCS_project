@@ -142,7 +142,7 @@ class Car:
         self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop': 'Yes'})
         self.lap += 1
         self.pitstop_counter += 1
-        self.laptime += 20.0 # Simulate the time lost in the pitstop (this can be adjusted based on the track and conditions)
+        self.lap_time += 20.0 # Simulate the time lost in the pitstop (this can be adjusted based on the track and conditions)
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

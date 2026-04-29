@@ -177,10 +177,6 @@ class Car:
             # prediction *= 1.5 # Safety car conditions increase lap time by 50%
 
         return prediction
-        
-        
-        tire_wear_factor = 1 + (self.tire_age * 0.02)  # Each lap on the same tires increases lap time by 2%
-        return base_time * tire_wear_factor
 
     def __repr__(self):
         """return a string representation for repr()."""

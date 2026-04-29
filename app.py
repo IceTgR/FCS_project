@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
+import os
 from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from InterfaceDM import main
+from data_preprocessing import get_preprocessed_datasets
+from ML_lap_times import train_dry_models
 
 main()
 
@@ -18,7 +21,39 @@ if not st.session_state.race_started:
          f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
 
-
+    # ML Model Training Section
+    with st.expander("🤖 Train ML Models"):
+        st.write("""Train and save ML models for lap time prediction.
+                 You need to do this the first time you run the app""")
+        
+        # Check if models exist
+        models_exist = (
+            os.path.exists('models/dry/rf_Monaco_Grand_Prix.pkl') and
+            os.path.exists('models/dry/rf_British_Grand_Prix.pkl')
+        )
+        
+        if models_exist:
+            st.success("✅ ML Models already trained and saved!")
+        else:
+            st.info("No trained models found. Click the button below to train them.")
+        
+        if st.button('🚀 Train Models Now', key='train_button'):
+            try:
+                with st.spinner('Loading data... This will take a moment...'):
+                    df_dry, df_wet = get_preprocessed_datasets()
+                
+                with st.spinner('Training models...'):
+                    results = train_dry_models(df_dry)
+                
+                st.success("✅ Models trained and saved successfully!")
+                st.write("**Results (MAE in seconds):**")
+                for track, mae in results.items():
+                    st.write(f"  • {track}: {mae:.3f}s")
+                
+            except FileNotFoundError as e:
+                st.error(f"❌ Error: {e}\nMake sure f1_project.db exists.")
+            except Exception as e:
+                st.error(f"❌ Training failed: {e}")
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
     col1, col2, col3 = st.columns(3)

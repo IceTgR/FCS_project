@@ -158,48 +158,44 @@ class Car:
 
         The penalty is different for each compound because soft tires degrade
         faster, medium tires sit in the middle, and hard tires are more stable.
+        We use a quadratic increase after a compound-specific threshold because
+        tire degradation usually accelerates as the stint gets longer.
         A small random factor keeps the simulation from feeling perfectly static.
         """
         wear_profiles = {
             'SOFT': {
                 'threshold': 5,
-                'per_lap': 0.14,
-                'late_stint_bonus': 0.03,
-                'late_stint_start': 12,
+                'quadratic': 0.022,
+                'linear': 0.08,
                 'random_low': 0.95,
                 'random_high': 1.05,
             },
             'MEDIUM': {
                 'threshold': 8,
-                'per_lap': 0.10,
-                'late_stint_bonus': 0.02,
-                'late_stint_start': 15,
+                'quadratic': 0.016,
+                'linear': 0.06,
                 'random_low': 0.96,
                 'random_high': 1.04,
             },
             'HARD': {
                 'threshold': 12,
-                'per_lap': 0.06,
-                'late_stint_bonus': 0.015,
-                'late_stint_start': 20,
+                'quadratic': 0.010,
+                'linear': 0.04,
                 'random_low': 0.97,
                 'random_high': 1.03,
             },
         }
-
-        profile = wear_profiles.get(self.tire, wear_profiles['MEDIUM'])
+        # Use the current tire compound directly..
+        profile = wear_profiles[self.tire]
 
         # Before the threshold, the tire is assumed to be in a usable window.
-        # After that, we add a linear wear term plus a slightly steeper late-stint
-        # term so that long stints become visibly slower.
+        # After that, we add a quadratic term so the degradation accelerates
+        # with stint length instead of growing only linearly.
         if self.tire_age <= profile['threshold']:
             return 0.0
 
         wear_laps = self.tire_age - profile['threshold']
-        penalty = wear_laps * profile['per_lap']
-
-        if self.tire_age > profile['late_stint_start']:
-            penalty += (self.tire_age - profile['late_stint_start']) * profile['late_stint_bonus']
+        penalty = (wear_laps ** 2) * profile['quadratic'] + wear_laps * profile['linear']
 
         # Add a small random variation so the effect does not look perfectly linear.
         penalty *= random.uniform(profile['random_low'], profile['random_high'])

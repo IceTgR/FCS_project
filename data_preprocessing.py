@@ -43,10 +43,10 @@ def get_preprocessed_datasets():
     ].copy()
 
     # Removing outliers, which are likely to be caused by safety cars, driving mistakes, or other incidents. 
-    # We do this by removing laps which are more than 12% slower than the median lap time of the respective track.
+    # We do this by removing laps which are more than 10% slower than the median lap time of the respective track.
     def remove_outliers(df):
         df['MedianTime'] = df.groupby('Track')['LapTimeSec'].transform('median')
-        df = df[df['LapTimeSec'] < df['MedianTime'] * 1.12]
+        df = df[df['LapTimeSec'] < df['MedianTime'] * 1.10]
         return df.drop(columns=['MedianTime'])
 
     df_dry = remove_outliers(df_dry)

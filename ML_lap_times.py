@@ -27,25 +27,23 @@ def train_dry_models(df_dry):
     for track in tracks:
         track_df = df_dry[df_dry['Track'] == track].copy() # get data for the track
 
-        # Predict the deviation from a compound-specific baseline instead of raw lap time.
-        # This helps the model focus on tire wear and stint evolution rather than pace alone.
-        compound_baseline = track_df.groupby('Compound')['LapTimeSec'].median().to_dict()
-        track_df['LapTimeResidual'] = track_df.apply(
-            lambda row: row['LapTimeSec'] - compound_baseline[row['Compound']],
-            axis=1,
-        )
-
         # Prepare features and target variable
         # Team and Compound are categorical, we will encode them accordingly
         features = ['LapNumber', 'TyreLife', 'AirTemp', 'Team', 'Compound']
         X = pd.get_dummies(track_df[features], columns=['Team', 'Compound'])
-        y = track_df['LapTimeResidual']
+        y = track_df['LapTimeSec']
 
         # Split data into training and testing sets, to evaluate our model's performance
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Initialize and train the Random Forest Regressor
-        model = RandomForestRegressor(n_estimators=100, max_depth=25, min_samples_leaf=2, random_state=42)
+        model = RandomForestRegressor(
+            n_estimators=200,
+            max_depth=12,
+            min_samples_leaf=4,
+            min_samples_split=8,
+            random_state=42,
+        )
         model.fit(X_train, y_train)
 
         # Evaluate the model on the test set
@@ -57,7 +55,6 @@ def train_dry_models(df_dry):
         track_id = track.replace(' ', '_') # replace spaces with underscores for file naming
         joblib.dump(model, f'models/dry/rf_{track_id}.pkl')
         joblib.dump(X.columns.tolist(), f'models/dry/cols_{track_id}.pkl') # save the feature names for later use
-        joblib.dump(compound_baseline, f'models/dry/base_{track_id}.pkl')
 
         results[track] = mae
         print(f'Modell für {track} gespeichert.')

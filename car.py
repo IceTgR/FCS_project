@@ -3,6 +3,7 @@
 import joblib
 import pandas as pd
 import os
+import random
 from ML_lap_times import train_dry_models
 
 class Car:
@@ -148,6 +149,62 @@ class Car:
         """Simulate the car aging its tires by a certain number of laps."""
         self.tire_age += laps
 
+    def tire_wear_penalty(self):
+        """Return a manual tire wear penalty in seconds.
+
+        We keep this outside the ML model because the training data mostly
+        contains stints that end before tires become truly extreme. That means
+        the model cannot reliably learn a strong wear curve from data alone.
+
+        The penalty is different for each compound because soft tires degrade
+        faster, medium tires sit in the middle, and hard tires are more stable.
+        A small random factor keeps the simulation from feeling perfectly static.
+        """
+        wear_profiles = {
+            'SOFT': {
+                'threshold': 5,
+                'per_lap': 0.14,
+                'late_stint_bonus': 0.03,
+                'late_stint_start': 12,
+                'random_low': 0.95,
+                'random_high': 1.05,
+            },
+            'MEDIUM': {
+                'threshold': 8,
+                'per_lap': 0.10,
+                'late_stint_bonus': 0.02,
+                'late_stint_start': 15,
+                'random_low': 0.96,
+                'random_high': 1.04,
+            },
+            'HARD': {
+                'threshold': 12,
+                'per_lap': 0.06,
+                'late_stint_bonus': 0.015,
+                'late_stint_start': 20,
+                'random_low': 0.97,
+                'random_high': 1.03,
+            },
+        }
+
+        profile = wear_profiles.get(self.tire, wear_profiles['MEDIUM'])
+
+        # Before the threshold, the tire is assumed to be in a usable window.
+        # After that, we add a linear wear term plus a slightly steeper late-stint
+        # term so that long stints become visibly slower.
+        if self.tire_age <= profile['threshold']:
+            return 0.0
+
+        wear_laps = self.tire_age - profile['threshold']
+        penalty = wear_laps * profile['per_lap']
+
+        if self.tire_age > profile['late_stint_start']:
+            penalty += (self.tire_age - profile['late_stint_start']) * profile['late_stint_bonus']
+
+        # Add a small random variation so the effect does not look perfectly linear.
+        penalty *= random.uniform(profile['random_low'], profile['random_high'])
+        return penalty
+
     def predict_lap_time(self, air_temp=25, is_raining=False):
         """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
 
@@ -158,8 +215,6 @@ class Car:
                 raise FileNotFoundError(f"Model file not found for track {self.track}. Please train the model first.")
             model = joblib.load(model_path)
             saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
-            base_path = f'models/dry/base_{track_id}.pkl'
-            compound_baseline = joblib.load(base_path) if os.path.exists(base_path) else None
 
             # add live data to the model input
             row = {
@@ -175,8 +230,13 @@ class Car:
             df = df.reindex(columns=saved_cols, fill_value=0)
 
             prediction = float(model.predict(df)[0])
-            if compound_baseline is not None:
-                prediction += float(compound_baseline.get(self.tire, 0.0))
+
+            # Add a manual tire wear penalty on top of the ML prediction.
+            # This is intentional: the available race data does not contain enough
+            # very long stints for the model to learn the degradation curve well.
+            # The ML model still provides the baseline pace, while this term
+            # enforces the visible drop-off from tire aging.
+            prediction += self.tire_wear_penalty()
 
             # if self.safety_car:
             # prediction *= 1.5 # Safety car conditions increase lap time by 50%

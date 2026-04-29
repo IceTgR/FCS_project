@@ -1,7 +1,22 @@
 # this is the feature that runs the simulation
+import random
+
 import streamlit as st
 import pandas as pd
 from car import Car
+
+
+def roll_safety_event(car):
+    """Randomly assign a race control event without changing lap time yet."""
+    event_roll = random.random()
+
+    if event_roll < 0.08:
+        car.safety_event_status = 'SAFETYCAR'
+    elif 'event_roll' < 0.24:
+        car.safety_event_status = 'VSC'
+    else:
+        car.safety_event_status = None
+    return car.safety_event_status
 
 # Show the fixed choices made before the race starts.
 def write_chosen_options():
@@ -12,6 +27,12 @@ def race_simulation():
     # Display the current race status at the top of the screen.
     st.write(f'Last lap time: {st.session_state.player.lap_time if st.session_state.player.lap > 1 else 'this your first lap'}\n'
             f'Current lap: {st.session_state.player.lap if st.session_state.player.lap <= st.session_state.total_laps else 'finished'}')
+
+    current_event = st.session_state.player.safety_event_status
+    if current_event == 'SAFETYCAR':
+        st.warning('Safety Car deployed.')
+    elif current_event == 'VSC':
+        st.info('Virtual Safety Car active.')
 
     # End-of-race checks.
     if st.session_state.player.lap == st.session_state.total_laps + 1:
@@ -27,6 +48,7 @@ def race_simulation():
         # Continue without pitting.
         if st.button('Stay Out'):
             st.session_state.player.advance_lap()
+            roll_safety_event(st.session_state.player)
             st.rerun(scope = 'app')
 
         # Let user pick next tire compound for an optional pit stop.
@@ -34,6 +56,7 @@ def race_simulation():
         # Enter pit lane and switch to the selected tire.
         if st.button('Pit Stop'):
             st.session_state.player.box(new_tire)
+            roll_safety_event(st.session_state.player)
             st.rerun(scope = 'app')
 
     # Show race data in table and chart form.

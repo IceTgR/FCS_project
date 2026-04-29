@@ -19,7 +19,7 @@ class Car:
         self.lap_time = 0.0
         self.race_history = []
         self.total_time = 0.0
-        self.safety_car = False
+        self.safety_event_status = None
         self.pitstop_counter = 0
         self._outlap_pending = False
 
@@ -106,16 +106,28 @@ class Car:
         self._total_time = value
 
     @property
-    def safety_car(self):
-        """Return whether the car is under safety car conditions."""
-        return self._safety_car
-    
-    @safety_car.setter
-    def safety_car(self, value):
-        """Set whether the car is under safety car conditions."""
-        if not isinstance(value, bool):
-            raise ValueError("Safety car must be a boolean value.")
-        self._safety_car = value
+    def safety_event_status(self):
+        """Return the current safety event status."""
+        return self._safety_event_status
+
+    @safety_event_status.setter
+    def safety_event_status(self, value):
+        """Set the current safety event status.
+
+        Allowed values are None, 'VSC', 'SAFETYCAR', 'safetycar', and 'safety_car'.
+        """
+        if value is None:
+            self._safety_event_status = None
+            return
+
+        if not isinstance(value, str):
+            raise ValueError("Safety event status must be None or a string value.")
+
+        normalized_value = value.replace('_', '').upper()
+        if normalized_value not in ['VSC', 'SAFETYCAR']:
+            raise ValueError("Safety event status must be None, 'VSC', or 'SAFETYCAR'.")
+
+        self._safety_event_status = normalized_value
 
     @property
     def pitstop_counter(self):        

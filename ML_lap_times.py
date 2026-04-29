@@ -37,7 +37,7 @@ def train_dry_models(df_dry):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Initialize and train the Random Forest Regressor
-        model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42) # max_depth limits the depth of the trees to prevent overfitting
+        model = RandomForestRegressor(n_estimators=100, max_depth=25, min_samples_leaf=2 random_state=42)
         model.fit(X_train, y_train)
 
         # Evaluate the model on the test set

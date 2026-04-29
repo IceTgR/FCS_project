@@ -149,27 +149,23 @@ class Car:
         self.tire_age += laps
 
     def predict_lap_time(self, air_temp=25, is_raining=False):
-        """Predict lap time using ML model with realistic tire degradation."""
+        """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
 
         if is_raining == False:
-            import numpy as np
-            
             track_id = self.track.replace(' ', '_')
             model_path = f'models/dry/rf_{track_id}.pkl'
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Model file not found for track {self.track}. Please train the model first.")
             model = joblib.load(model_path)
             saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
+            base_path = f'models/dry/base_{track_id}.pkl'
+            compound_baseline = joblib.load(base_path) if os.path.exists(base_path) else None
 
-            # Build feature row with polynomial tire degradation features
-            # The model learns realistic tire wear patterns from the training data
+            # add live data to the model input
             row = {
                 'Team': self.team,
                 'Compound': self.tire,
                 'TyreLife': self.tire_age,
-                'TyreLifeSquared': self.tire_age ** 2,      # Quadratic degradation
-                'TyreLifeCubed': self.tire_age ** 3,        # Cubic degradation for older tires
-                'TyreLifeLog': np.log1p(self.tire_age),     # Logarithmic component
                 'AirTemp': air_temp,
                 'LapNumber': self.lap,
             }
@@ -179,10 +175,11 @@ class Car:
             df = df.reindex(columns=saved_cols, fill_value=0)
 
             prediction = float(model.predict(df)[0])
+            if compound_baseline is not None:
+                prediction += float(compound_baseline.get(self.tire, 0.0))
 
-            # Apply safety car penalty if active
-            if self.safety_car:
-                prediction *= 1.5
+            # if self.safety_car:
+            # prediction *= 1.5 # Safety car conditions increase lap time by 50%
 
             self.lap_time = prediction
             return prediction

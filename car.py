@@ -20,7 +20,8 @@ class Car:
         self.race_history = []
         self.total_time = 0.0
         self.pitstop_counter = 0
-        self._outlap_pending = False
+        self.outlap_pending = False
+        self.outlap_comment_pending = False
 
     @property
     def team(self):
@@ -116,6 +117,30 @@ class Car:
             raise ValueError("Pitstop counter cannot be negative.")
         self._pitstop_counter = value 
 
+    @property
+    def outlap_pending(self):        
+        """Return whether the car has an outlap pending after a pit stop."""
+        return self._outlap_pending
+    
+    @outlap_pending.setter
+    def outlap_pending(self, value):
+        """Set whether the car has an outlap pending or not."""
+        if not isinstance(value, bool):
+            raise ValueError("outlap_pending must be a boolean value.")
+        self._outlap_pending = value
+
+    @property
+    def outlap_comment_pending(self):        
+        """Return whether the car has an outlap comment pending after a pit stop."""
+        return self._outlap_comment_pending
+    
+    @outlap_comment_pending.setter
+    def outlap_comment_pending(self, value):
+        """Set whether the car has an outlap comment pending or not."""
+        if not isinstance(value, bool):
+            raise ValueError("outlap_comment_pending must be a boolean value.")
+        self._outlap_comment_pending = value
+
     def _race_comment(self, lap_type, safety_event_status=None):
         """Build a human-readable comment for the race log."""
         comment_parts = []
@@ -134,10 +159,10 @@ class Car:
         """Simulate the car advancing to the next lap."""
         self.total_time += self.lap_time
         # Determine lap type: Outlap if coming out of pit stop, Normal otherwise
-        lap_type = 'Outlap' if self._outlap_pending else 'Normal'
+        lap_type = 'Outlap' if self._outlap_comment_pending else 'Normal'
         self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Kommentar': self._race_comment(lap_type, safety_event_status)})
-        if self._outlap_pending:
-            self._outlap_pending = False
+        if self._outlap_comment_pending:
+            self._outlap_comment_pending = False
         self.lap += 1
         self.tire_age += 1
 
@@ -182,6 +207,7 @@ class Car:
         # The next lap after the stop is the outlap, so the following ML
         # prediction should include an extra penalty once.
         self._outlap_pending = True
+        self._outlap_comment_pending = True
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""

@@ -149,7 +149,7 @@ class Car:
         self.total_time += self.lap_time
         # Determine lap type: Outlap if coming out of pit stop, Normal otherwise
         lap_type = 'Outlap' if self._outlap_pending else 'Normal'
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': lap_type, 'Kommentar': self._race_comment(lap_type)})
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Kommentar': self._race_comment(lap_type)})
         if self._outlap_pending:
             self._outlap_pending = False
         self.lap += 1
@@ -190,7 +190,7 @@ class Car:
         self.total_time += self.lap_time
         
         # Record the inlap with the OLD tire and OLD tire age
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Rundenart': 'Inlap', 'Kommentar': self._race_comment('Inlap')})
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Kommentar': self._race_comment('Inlap')})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

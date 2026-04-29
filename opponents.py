@@ -154,11 +154,13 @@ def build_opponent_table(opponents, total_laps):
     rows = []
     for opponent in opponents:
         # Die Tabelle soll den aktuellen Zustand der Gegner kompakt zeigen.
+        last_lap_time = opponent.car.race_history[-1]['Lap Time'] if opponent.car.race_history else 'n.a.'
         rows.append(
             {
                 'Team': opponent.team,
                 'Start Tire': opponent.starting_tire,
                 'Current Lap': opponent.car.lap,
+                'Last Lap Time': round(last_lap_time, 2),
                 'Tire': opponent.car.tire,
                 'Tire Age': opponent.car.tire_age,
                 'Planned Pit Lap': opponent.pit_lap,

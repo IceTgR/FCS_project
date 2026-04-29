@@ -164,6 +164,7 @@ class Car:
                 'Team': self.team,
                 'Compound': self.tire,
                 'TyreLife': self.tire_age,
+                'TyreLifeSquared': self.tire_age ** 2,  # Quadratic tire degradation
                 'AirTemp': air_temp,
                 'LapNumber': self.lap,
             }
@@ -173,6 +174,12 @@ class Car:
             df = df.reindex(columns=saved_cols, fill_value=0)
 
             prediction = float(model.predict(df)[0])
+
+            # Apply additional tire wear penalty for older tires
+            # This amplifies the tire degradation effect for more realistic behavior
+            if self.tire_age > 10:
+                tire_wear_penalty = 1 + (self.tire_age - 10) * 0.008  # +0.8% per lap after lap 10
+                prediction *= tire_wear_penalty
 
             # if self.safety_car:
             # prediction *= 1.5 # Safety car conditions increase lap time by 50%

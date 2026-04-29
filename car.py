@@ -21,6 +21,7 @@ class Car:
         self.total_time = 0.0
         self.safety_car = False
         self.pitstop_counter = 0
+        self._outlap_pending = False
 
     @property
     def team(self):
@@ -131,19 +132,47 @@ class Car:
     def advance_lap(self):
         """Simulate the car advancing to the next lap."""
         self.total_time += self.lap_time
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop': 'No'})
+        # Determine lap type: Outlap if coming out of pit stop, Normal otherwise
+        lap_type = 'Outlap' if self._outlap_pending else 'Normal'
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': lap_type})
+        if self._outlap_pending:
+            self._outlap_pending = False
         self.lap += 1
         self.tire_age += 1
 
+    def inlap_penalty(self):
+        """Return the total extra time lost on the inlap.
+
+        In Formula 1 the stop time is counted into the lap that enters the pit
+        lane, not as a separate racing lap. We therefore calculate the complete lost time
+        from the pitstop here.
+        """
+        pit_loss = random.uniform(19.5, 25.0)
+        return pit_loss
+
+    def outlap_penalty(self):
+        """Return the extra time for the first lap after the pit stop.
+
+        The outlap is slower because the tires and brakes are cold and the car
+        needs one lap to get back into a normal operating window. We randomize
+        this slightly because tire warm-up is not identical every time.
+        """
+        return random.uniform(0.6, 1.4)
+
     def box(self, new_tire):
         """Simulate the car going to the box and changing tires."""
+        # The pit stop is counted into the inlap time, so we add the full
+        # combined penalty before storing the lap in the race history.
+        self.lap_time += self.inlap_penalty()
         self.tire = new_tire
         self.tire_age = 0
-        self.total_time += self.lap_time # The additional time for pitstop is added at subclass
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop': 'Yes'})
+        self.total_time += self.lap_time
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Rundenart': 'Inlap'})
         self.lap += 1
         self.pitstop_counter += 1
-        self.lap_time += 20.0 # Simulate the time lost in the pitstop (this can be adjusted based on the track and conditions)
+        # The next lap after the stop is the outlap, so the following ML
+        # prediction should include an extra penalty once.
+        self._outlap_pending = True
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""
@@ -226,6 +255,14 @@ class Car:
             df = df.reindex(columns=saved_cols, fill_value=0)
 
             prediction = float(model.predict(df)[0])
+
+            # Apply the outlap penalty once directly after a pit stop.
+            # We keep this outside the ML model because outlaps are driven by
+            # cold tires and brakes, which are not represented cleanly in the
+            # race-lap training data.
+            if self._outlap_pending:
+                prediction += self.outlap_penalty()
+                self._outlap_pending = False
 
             # Add a manual tire wear penalty on top of the ML prediction.
             # This is intentional: the available race data does not contain enough

@@ -18,12 +18,11 @@ def roll_safety_event(car):
     if not hasattr(st.session_state, 'safety_event_duration'):
         st.session_state.safety_event_duration = 0
     
-    # Decrement existing event duration
-    if car.safety_event_status is not None and st.session_state.safety_event_duration > 0:
+    # Decrement existing event duration, if there is an existing event
+    if st.session_state.safety_event_duration > 0:
         st.session_state.safety_event_duration -= 1
         if st.session_state.safety_event_duration == 0:
             car.safety_event_status = None
-        return
     
     # Only roll for new events if no event is currently active
     if car.safety_event_status is not None:

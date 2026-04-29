@@ -1,4 +1,4 @@
-# Here we'll create the ML part. It is going to be a regression model, which will predict the laptimes.
+# Here we preprocess the retrieved data so that it is ready for training our ML models.
 import sqlite3
 import pandas as pd
 

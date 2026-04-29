@@ -89,17 +89,6 @@ def _next_compound_for_tire(starting_tire):
     return _weighted_choice(STARTING_TIRE_STRATEGIES[starting_tire]['next_compound_weights'])
 
 
-def _pit_lap_for_team(team, total_laps):
-    """Berechnet einen einfachen geplanten Boxenstopp-Tag."""
-    # Jedes Team bekommt einen typischen Boxenfenster-Bereich.
-    # Zusätzlich leichte Zufallsabweichung pro Rennen, damit die KI nicht
-    # immer im exakt gleichen Rundensektor stoppt.
-    fraction = BASE_PIT_FRACTION_PROFILES[team] + random.uniform(-0.03, 0.03)
-    base_lap = int(total_laps * fraction)
-    # Nur eine Zufallsquelle: Teamprofil + fraction-Variation.
-    return base_lap
-
-
 def _pit_lap_for_starting_tire(team, starting_tire, total_laps):
     """Passt das Boxenfenster an den Startreifen an."""
     strategy = STARTING_TIRE_STRATEGIES[starting_tire]
@@ -169,7 +158,7 @@ def build_opponent_table(opponents, total_laps):
             {
                 'Team': opponent.team,
                 'Start Tire': opponent.starting_tire,
-                'Lap': opponent.car.lap,
+                'Current Lap': opponent.car.lap,
                 'Tire': opponent.car.tire,
                 'Tire Age': opponent.car.tire_age,
                 'Planned Pit Lap': opponent.pit_lap,

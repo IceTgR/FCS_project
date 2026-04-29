@@ -1,4 +1,5 @@
 import streamlit as st
+from strategy_optimizer import find_optimal_pit_lap
 import pandas as pd
 import os
 from feature_01 import write_chosen_options, race_simulation

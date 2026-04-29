@@ -30,7 +30,7 @@ def train_models():
                     with st.spinner('Downloading F1 data from fastf1 (this may take a few minutes)...'):
                         # Define years and tracks for data retrieval
                         years = range(2018, 2026) # 2018-2025
-                        track_list = ['Monaco', 'Silverstone']
+                        track_list = ['Monaco', 'Biritish']
                         team_list = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
                         fastf1_to_sql(years, track_list, team_list)
                     st.success("✅ Database created successfully!")

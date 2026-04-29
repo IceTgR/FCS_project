@@ -89,14 +89,12 @@ if not st.session_state.race_started:
 
 # Race screen: show selected options and advance race state lap by lap.
 if st.session_state.race_started:
-    # --- ADD THIS CHECK HERE ---
     if 'player' in st.session_state:
         with st.sidebar:
             st.header("🎧 Pit Wall Radio")
             
-            # Use current lap from the player object safely
-            # Note: Verify if your Car class uses 'lap_count' or 'current_lap'
-            current_lap = st.session_state.player.lap_count 
+            # Use '.lap' instead of '.lap_count'
+            current_lap = st.session_state.player.lap 
             
             if 'ideal_lap' not in st.session_state:
                 with st.spinner("AI is calculating the optimal path..."):

@@ -22,7 +22,6 @@ def get_preprocessed_datasets():
 
     # Lap Filtering: We remove everything, which is not a "clean" lap to ensure data quality for better ML results.
     df_clean = df[
-        (df['LapNumber'] > 1) &      # Remove first lap because of high traffic (will implement this logic manually)
         (df['IsOutlap'] == 0) &      # Remove outlaps (will implement this logic manually)
         (df['IsPitstop'] == 0)       # Remove inlaps (will implement this logic manually)
     ].copy()

@@ -22,7 +22,7 @@ def race_simulation():
 
     else:
         # Compute the lap time before the user chooses an action.
-        st.session_state.player.calculate_lap_time()
+        st.session_state.player.predict_lap_time()
     
         # Continue without pitting.
         if st.button('Stay Out'):

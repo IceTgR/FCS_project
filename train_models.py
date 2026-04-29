@@ -2,7 +2,7 @@
 import streamlit as st
 import joblib
 import os
-from data_processing import get_preprocessed_datasets
+from data_preprocessing import get_preprocessed_datasets
 from model_training import train_dry_models
 from retrieve_data import fastf1_to_sql
 

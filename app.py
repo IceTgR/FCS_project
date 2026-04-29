@@ -39,7 +39,7 @@ if not st.session_state.race_started:
     with st.expander("🏎️ ML Strategist Briefing", expanded=True):
         st.write("Let our AI simulate the race to find your mathematically fastest pit stop strategy!")
         
-with st.expander("🏎️ ML Strategist Briefing", expanded=True):
+    with st.expander("🏎️ ML Strategist Briefing", expanded=True):
         st.write("Let our AI simulate the race to find your mathematically fastest pit stop strategy!")
         
     if st.button("Ask the AI for the Optimal Pit Lap"):

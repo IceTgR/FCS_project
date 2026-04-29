@@ -39,3 +39,7 @@ def train_dry_models(df_dry):
     # Initialize and train the Random Forest Regressor
     model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42) # max_depth limits the depth of the trees to prevent overfitting
     model.fit(X_train, y_train)
+
+    # Evaluate the model on the test set
+    predictions = model.predict(X_test)
+    mae = mean_absolute_error(y_test, predictions)

@@ -30,15 +30,15 @@ BASE_PIT_FRACTION_PROFILES = {
 # Der Startreifen bestimmt die Strategie stark mit: weich = früher Stopp, hart = späterer Stopp.
 STARTING_TIRE_STRATEGIES = {
     'SOFT': {
-        'pit_fraction_factor': 0.80,
+        'pit_fraction_factor': 0.60,
         'next_compound_weights': [('MEDIUM', 0.45), ('HARD', 0.55)],
     },
     'MEDIUM': {
-        'pit_fraction_factor': 1.00,
+        'pit_fraction_factor': 0.80,
         'next_compound_weights': [('SOFT', 0.15), ('HARD', 0.85)],
     },
     'HARD': {
-        'pit_fraction_factor': 1.30,
+        'pit_fraction_factor': 1.15,
         'next_compound_weights': [('SOFT', 0.25), ('MEDIUM', 0.75)],
     },
 }

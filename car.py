@@ -152,11 +152,12 @@ class Car:
         """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
 
         if is_raining == False:
-            model_path = f'models/dry/rf_{self.track}.pkl'
+            track_id = self.track.replace(' ', '_')
+            model_path = f'models/dry/rf_{track_id}.pkl'
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Model file not found for track {self.track}. Please train the model first.")
             model = joblib.load(model_path)
-            saved_cols = joblib.load(f'models/dry/cols_{self.track}.pkl')
+            saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
 
             # add live data to the model input
             row = {

@@ -52,9 +52,15 @@ def get_preprocessed_datasets():
     df_dry = remove_outliers(df_dry)
     df_wet = remove_outliers(df_wet)
     
-    # Add tire wear feature: quadratic degradation models realistic tire behavior
+    # Add polynomial tire wear features: realistic tire degradation is non-linear
+    # Tires degrade slowly at first, then accelerate in degradation
     df_dry['TyreLifeSquared'] = df_dry['TyreLife'] ** 2
+    df_dry['TyreLifeCubed'] = df_dry['TyreLife'] ** 3
+    df_dry['TyreLifeLog'] = df_dry['TyreLife'].apply(lambda x: __import__('numpy').log1p(x))
+    
     df_wet['TyreLifeSquared'] = df_wet['TyreLife'] ** 2
+    df_wet['TyreLifeCubed'] = df_wet['TyreLife'] ** 3
+    df_wet['TyreLifeLog'] = df_wet['TyreLife'].apply(lambda x: __import__('numpy').log1p(x))
     
     print(f"Preprocessing fertig: {len(df_dry)} Trocken-Runden, {len(df_wet)} Regen-Runden.")
     return df_dry, df_wet

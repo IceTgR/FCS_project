@@ -149,9 +149,11 @@ class Car:
         self.tire_age += laps
 
     def predict_lap_time(self, air_temp=25, is_raining=False):
-        """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
+        """Predict lap time using ML model with realistic tire degradation."""
 
         if is_raining == False:
+            import numpy as np
+            
             track_id = self.track.replace(' ', '_')
             model_path = f'models/dry/rf_{track_id}.pkl'
             if not os.path.exists(model_path):
@@ -159,12 +161,15 @@ class Car:
             model = joblib.load(model_path)
             saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
 
-            # add live data to the model input
+            # Build feature row with polynomial tire degradation features
+            # The model learns realistic tire wear patterns from the training data
             row = {
                 'Team': self.team,
                 'Compound': self.tire,
                 'TyreLife': self.tire_age,
-                'TyreLifeSquared': self.tire_age ** 2,  # Quadratic tire degradation
+                'TyreLifeSquared': self.tire_age ** 2,      # Quadratic degradation
+                'TyreLifeCubed': self.tire_age ** 3,        # Cubic degradation for older tires
+                'TyreLifeLog': np.log1p(self.tire_age),     # Logarithmic component
                 'AirTemp': air_temp,
                 'LapNumber': self.lap,
             }
@@ -175,14 +180,9 @@ class Car:
 
             prediction = float(model.predict(df)[0])
 
-            # Apply additional tire wear penalty for older tires
-            # This amplifies the tire degradation effect for more realistic behavior
-            #if self.tire_age > 10:
-             #   tire_wear_penalty = 1 + (self.tire_age - 10) * 0.008  # +0.8% per lap after lap 10
-              #  prediction *= tire_wear_penalty
-
-            # if self.safety_car:
-            # prediction *= 1.5 # Safety car conditions increase lap time by 50%
+            # Apply safety car penalty if active
+            if self.safety_car:
+                prediction *= 1.5
 
             self.lap_time = prediction
             return prediction

@@ -28,22 +28,40 @@ def train_dry_models(df_dry):
         track_df = df_dry[df_dry['Track'] == track].copy() # get data for the track
 
         # Prepare features and target variable
-        # Team and Compound are categorical, we will encode them accordingly
-        features = ['LapNumber', 'TyreLife', 'TyreLifeSquared', 'AirTemp', 'Team', 'Compound']
+        # Features include polynomial tire degradation to capture realistic tire wear patterns
+        features = ['LapNumber', 'TyreLife', 'TyreLifeSquared', 'TyreLifeCubed', 'TyreLifeLog', 'AirTemp', 'Team', 'Compound']
         X = pd.get_dummies(track_df[features], columns=['Team', 'Compound'])
         y = track_df['LapTimeSec']
 
         # Split data into training and testing sets, to evaluate our model's performance
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Initialize and train the Random Forest Regressor
-        model = RandomForestRegressor(n_estimators=100, max_depth=25, min_samples_leaf=2, random_state=42)
+        # Initialize and train the Random Forest Regressor with optimized hyperparameters
+        # max_depth=15: Reduces overfitting while capturing non-linear relationships
+        # min_samples_leaf=5: Ensures leaves have enough samples for robust predictions
+        # min_samples_split=10: Prevents tree from learning noise in data
+        model = RandomForestRegressor(
+            n_estimators=150,           # More trees = better generalization
+            max_depth=15,               # Shallower trees reduce overfitting
+            min_samples_leaf=5,         # Minimum samples per leaf
+            min_samples_split=10,       # Minimum samples to split a node
+            random_state=42
+        )
         model.fit(X_train, y_train)
 
         # Evaluate the model on the test set
         predictions = model.predict(X_test)
         mae = mean_absolute_error(y_test, predictions)
         print(f'Durchschnittlicher Fehler (MAE) für {track}: {mae:.3f} Sekunden')
+        
+        # Show feature importance to understand tire wear impact
+        feature_importance = pd.DataFrame({
+            'Feature': X.columns,
+            'Importance': model.feature_importances_
+        }).sort_values('Importance', ascending=False)
+        print(f'\n📊 Top Features für {track}:')
+        print(feature_importance.head(10).to_string(index=False))
+        print()
     
         # Save the trained model for later use
         track_id = track.replace(' ', '_') # replace spaces with underscores for file naming

@@ -4,9 +4,6 @@ import os
 from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from InterfaceDM import main
-from data_preprocessing import get_preprocessed_datasets
-from ML_lap_times import train_dry_models
-from retrieve_data import fastf1_to_sql
 from train_models import train_models
 
 #main()

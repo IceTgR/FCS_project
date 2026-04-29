@@ -29,7 +29,8 @@ def train_dry_models(df_dry):
 
         # Prepare features and target variable
         # Team and Compound are categorical, we will encode them accordingly
-        features = ['LapNumber', 'TyreLife', 'AirTemp', 'Team', 'Compound']
+        track_df['TyreLifeSquared'] = track_df['TyreLife'] ** 2
+        features = ['LapNumber', 'TyreLife', 'TyreLifeSquared', 'AirTemp', 'Team', 'Compound']
         X = pd.get_dummies(track_df[features], columns=['Team', 'Compound'])
         y = track_df['LapTimeSec']
 

@@ -21,7 +21,7 @@ if not st.session_state.race_started:
          f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
     
-   #daten laden und modell trainieren, falls noch nicht vorhanden
+   # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
     train_models() 
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
@@ -88,4 +88,27 @@ if not st.session_state.race_started:
 if st.session_state.race_started:
     write_chosen_options()
     race_simulation()
+
+    # Mid-race ML strategist: allow re-running the optimizer during the race
+    with st.expander("🏁 Mid-Race ML Strategist", expanded=False):
+        st.write("Run the AI during the race to re-evaluate an optimal pit lap based on current state.")
+        next_compound = st.selectbox("Choose next compound (if pitting):", ['SOFT','MEDIUM','HARD'], key='mid_next_compound')
+        if st.button("Ask AI (mid-race)"):
+            with st.spinner("Simulating race times for strategy..."):
+                try:
+                    best_lap = find_optimal_pit_lap(
+                        track_name=st.session_state.track,
+                        total_laps=st.session_state.total_laps,
+                        team=st.session_state.player.team,
+                        start_compound=st.session_state.player.tire,
+                        next_compound=next_compound,
+                        air_temp=25.0,
+                        pit_window_start=st.session_state.player.lap + 1,
+                        pit_window_end=st.session_state.total_laps - 1,
+                    )
+                    st.success(f"**Optimal Strategy Found:** The AI recommends pitting on Lap {best_lap}!")
+                except FileNotFoundError:
+                    st.error("Model not found! Make sure models are trained before running the strategist.")
+                except Exception as e:
+                    st.error(f"An error occurred running the strategist: {e}")
 

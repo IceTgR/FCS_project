@@ -20,20 +20,37 @@ BASE_STARTING_TIRE_WEIGHTS = {
 
 # Typisches Boxenfenster je Team als Anteil der Renndistanz womit den Gegnern Profile verpasst werden.
 BASE_PIT_FRACTION_PROFILES = {
-    'Ferrari': 0.31,
-    'Mercedes': 0.34,
-    'Red Bull': 0.36,
-    'McLaren': 0.29,
-    'Williams': 0.27,
+    'Ferrari': 0.45,
+    'Mercedes': 0.48,
+    'Red Bull': 0.40,
+    'McLaren': 0.38,
+    'Williams': 0.50,
+}
+
+# Der Startreifen bestimmt die Strategie stark mit: weich = früher Stopp, hart = späterer Stopp.
+STARTING_TIRE_STRATEGIES = {
+    'SOFT': {
+        'pit_fraction_factor': 0.80,
+        'next_compound_weights': [('MEDIUM', 0.45), ('HARD', 0.55)],
+    },
+    'MEDIUM': {
+        'pit_fraction_factor': 1.00,
+        'next_compound_weights': [('SOFT', 0.15), ('HARD', 0.85)],
+    },
+    'HARD': {
+        'pit_fraction_factor': 1.30,
+        'next_compound_weights': [('SOFT', 0.25), ('MEDIUM', 0.75)],
+    },
 }
 
 class Opponent:
     """Ein KI-Gegner mit Auto und einfacher Strategie."""
 
-    def __init__(self, team, car, pit_lap, next_compound):
+    def __init__(self, team, car, starting_tire, pit_lap, next_compound):
         # Jeder Gegner speichert nur die Daten, die wir für das Rennen brauchen.
         self.team = team
         self.car = car
+        self.starting_tire = starting_tire
         self.pit_lap = pit_lap
         self.next_compound = next_compound
         self.has_pitted = False
@@ -69,9 +86,7 @@ def _starting_tire_for_team(team):
 
 def _next_compound_for_tire(starting_tire):
     """Bestimmt den geplanten Reifen nach dem ersten Stint."""
-    if starting_tire == 'HARD':
-        return 'MEDIUM'
-    return 'HARD'
+    return _weighted_choice(STARTING_TIRE_STRATEGIES[starting_tire]['next_compound_weights'])
 
 
 def _pit_lap_for_team(team, total_laps):
@@ -83,6 +98,15 @@ def _pit_lap_for_team(team, total_laps):
     base_lap = int(total_laps * fraction)
     # Nur eine Zufallsquelle: Teamprofil + fraction-Variation.
     return base_lap
+
+
+def _pit_lap_for_starting_tire(team, starting_tire, total_laps):
+    """Passt das Boxenfenster an den Startreifen an."""
+    strategy = STARTING_TIRE_STRATEGIES[starting_tire]
+    base_fraction = BASE_PIT_FRACTION_PROFILES[team]
+    fraction = base_fraction * strategy['pit_fraction_factor'] + random.uniform(-0.02, 0.02)
+    pit_lap = int(total_laps * fraction)
+    return pit_lap
 
 
 def create_opponents(player_team, track, total_laps):
@@ -101,7 +125,8 @@ def create_opponents(player_team, track, total_laps):
             Opponent(
                 team=team,
                 car=car,
-                pit_lap=_pit_lap_for_team(team, total_laps),
+                starting_tire=starting_tire,
+                pit_lap=_pit_lap_for_starting_tire(team, starting_tire, total_laps),
                 next_compound=_next_compound_for_tire(starting_tire),
             )
         )
@@ -143,6 +168,7 @@ def build_opponent_table(opponents, total_laps):
         rows.append(
             {
                 'Team': opponent.team,
+                'Start Tire': opponent.starting_tire,
                 'Lap': opponent.car.lap,
                 'Tire': opponent.car.tire,
                 'Tire Age': opponent.car.tire_age,

@@ -7,16 +7,39 @@ from car import Car
 
 
 def roll_safety_event(car):
-    """Randomly assign a race control event without changing lap time yet."""
+    """Manage safety event duration and randomly assign new events.
+    
+    Decrements the current event duration each lap and clears it when expired.
+    Only rolls for new events if no event is currently active.
+    Safety Car typically lasts 3-6 laps, VSC typically 2-4 laps.
+    Duration is stored in session state.
+    """
+    # Initialize duration if needed
+    if not hasattr(st.session_state, 'safety_event_duration'):
+        st.session_state.safety_event_duration = 0
+    
+    # Decrement existing event duration
+    if car.safety_event_status is not None and st.session_state.safety_event_duration > 0:
+        st.session_state.safety_event_duration -= 1
+        if st.session_state.safety_event_duration == 0:
+            car.safety_event_status = None
+        return
+    
+    # Only roll for new events if no event is currently active
+    if car.safety_event_status is not None:
+        return
+    
     event_roll = random.random()
 
     if event_roll < 0.015:
         car.safety_event_status = 'SAFETYCAR'
+        st.session_state.safety_event_duration = random.randint(3, 6)
     elif event_roll < 0.04:
         car.safety_event_status = 'VSC'
+        st.session_state.safety_event_duration = random.randint(2, 4)
     else:
         car.safety_event_status = None
-    return car.safety_event_status
+        st.session_state.safety_event_duration = 0
 
 # Show the fixed choices made before the race starts.
 def write_chosen_options():

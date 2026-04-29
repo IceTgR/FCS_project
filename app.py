@@ -1,9 +1,8 @@
 import streamlit as st
 from strategy_optimizer import find_optimal_pit_lap
-from streamlit_option_menu import option_menu
 import pandas as pd
 import os
-from feature_01 import write_chosen_options, race_simulation
+from racelogic import write_chosen_options, race_simulation
 from car import Car
 # from InterfaceDM import main
 from train_models import train_models
@@ -29,9 +28,8 @@ if not st.session_state.race_started:
     col1, col2, col3 = st.columns(3)
     team_player = col1.selectbox('Select your team:', ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'])
 
-
-    
     st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
+
     tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
 
     # --- NEW ML STRATEGIST WINDOW HERE ---
@@ -86,35 +84,8 @@ if not st.session_state.race_started:
             st.session_state.total_laps = 52 # set total laps for Silverstone
         st.rerun(scope='app')
 
-
 # Race screen: show selected options and advance race state lap by lap.
 if st.session_state.race_started:
-    if 'player' in st.session_state:
-        with st.sidebar:
-            st.header("🎧 Pit Wall Radio")
-            
-            # Use '.lap' instead of '.lap_count'
-            current_lap = st.session_state.player.lap 
-            
-            if 'ideal_lap' not in st.session_state:
-                with st.spinner("AI is calculating the optimal path..."):
-                    st.session_state.ideal_lap = find_optimal_pit_lap(
-                        track_name=st.session_state.track,
-                        total_laps=st.session_state.total_laps,
-                        team=st.session_state.player.team,
-                        start_compound=st.session_state.player.tire,
-                        next_compound='HARD',
-                        air_temp=25.0,
-                        pit_window_start=10,
-                        pit_window_end=st.session_state.total_laps - 10
-                    )
-            
-            st.subheader("🤖 ML Strategist Advice")
-            st.info(f"**Ideal Pit Lap: {st.session_state.ideal_lap}**")
-            st.write(f"Current Lap: {current_lap}")
-
-    # Standard simulation calls
     write_chosen_options()
     race_simulation()
-
 

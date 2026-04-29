@@ -34,10 +34,10 @@ if not st.session_state.race_started:
     if st.button('Start the simulation'):
         st.session_state.race_started = True
         if st.session_state.track == 'Monaco':
-            st.session_state.player = Car(driver_player, 'Monaco Grand Prix', tire_start) # create an instance for Monaco
+            st.session_state.player = Car(team_player, 'Monaco Grand Prix', tire_start) # create an instance for Monaco
             st.session_state.total_laps = 78 # set total laps for Monaco
         elif st.session_state.track == 'Silverstone':
-            st.session_state.player = Car_Silverstone(driver_player, 'British Grand Prix' tire_start) # create an instance for Silverstone
+            st.session_state.player = Car(team_player, 'British Grand Prix' tire_start) # create an instance for Silverstone
             st.session_state.total_laps = 52 # set total laps for Silverstone
         st.rerun(scope='app')
 

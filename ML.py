@@ -1,4 +1,7 @@
 # Here we'll create the ML part. It is going to be a regression model, which will predict the laptimes.
+import sqlite3
+import pandas as pd
+
 def get_preprocessed_datasets():
     """This function will return the preprocessed datasets, split into wet and dry, ready for training our ML models."""
     # Loading data from SQL

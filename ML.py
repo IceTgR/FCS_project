@@ -27,12 +27,6 @@ def get_preprocessed_datasets():
         (df['IsPitstop'] == 0)       # Remove inlaps (will implement this logic manually)
     ].copy()
 
-    # Removing outlier, which are likely to be caused by safety cars, driving mistakes, or other incidents. 
-    # We do this by removing laps which are more than 7% slower than the median lap time of the respective track.
-    df_clean['MedianTime'] = df_clean.groupby('Track')['LapTimeSec'].transform('median')
-    df_clean = df_clean[df_clean['LapTimeSec'] < df_clean['MedianTime'] * 1.07]
-    df_clean = df_clean.drop(columns=['MedianTime'])
-    
     # Splitting into wet and dry datasets
     dry_tyres = ['SOFT', 'MEDIUM', 'HARD']
     wet_tyres = ['INTERMEDIATE', 'WET']
@@ -49,5 +43,15 @@ def get_preprocessed_datasets():
         (df_clean['IsRaining'] == 1)
     ].copy()
 
+    # Removing outliers, which are likely to be caused by safety cars, driving mistakes, or other incidents. 
+    # We do this by removing laps which are more than 7% slower than the median lap time of the respective track.
+    def remove_outliers(df):
+        df['MedianTime'] = df.groupby('Track')['LapTimeSec'].transform('median')
+        df = df[df['LapTimeSec'] < df['MedianTime'] * 1.07]
+        return df.drop(columns=['MedianTime'])
+
+    df_dry = remove_outliers(df_dry)
+    df_wet = remove_outliers(df_wet)
+    
     print(f"Preprocessing fertig: {len(df_dry)} Trocken-Runden, {len(df_wet)} Regen-Runden.")
     return df_dry, df_wet

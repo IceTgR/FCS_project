@@ -134,14 +134,13 @@ def _should_take_event_stop(opponent, safety_event_status):
 
     tire = opponent.car.tire
     tire_age = opponent.car.tire_age
-    required_age = EVENT_BONUS_PIT_AGE[tire]
 
     if safety_event_status == 'SAFETYCAR':
-        if tire_age < MIN_EVENT_PIT_AGE[tire]:
+        if tire_age < MIN_EVENT_PIT_AGE_SC[tire]:
             return False
         
     if safety_event_status == 'VSC':
-        if tire_age < required_age:
+        if tire_age < MIN_EVENT_PIT_AGE_VSC[tire]:
             return False
 
     # Event-Stop möglich nach jedem regulären/Event-Stop, solange Reifenalter passt.

@@ -177,7 +177,8 @@ class Car:
             # if self.safety_car:
             # prediction *= 1.5 # Safety car conditions increase lap time by 50%
 
-        return prediction
+            self.lap_time = prediction
+            return prediction
 
     def __repr__(self):
         """return a string representation for repr()."""

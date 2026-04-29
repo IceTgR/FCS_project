@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from feature_01 import write_chosen_options, race_simulation
 from car import Car
-from InterfaceDM import main
+# from InterfaceDM import main
 from train_models import train_models
 
 #main()

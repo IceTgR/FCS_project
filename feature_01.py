@@ -5,7 +5,7 @@ from car import Car
 
 # Show the fixed choices made before the race starts.
 def write_chosen_options():
-    st.write(f'You have selected {st.session_state.player.driver} as your driver, '
+    st.write(f'You have selected {st.session_state.player.team} as your team, '
         f'starting on {st.session_state.player.tire} tires at the {st.session_state.track} track.')
     
 def race_simulation():

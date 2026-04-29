@@ -47,7 +47,7 @@ def train_dry_models(df_dry):
     
         # Save the trained model for later use
         track_id = track.replace(' ', '_') # replace spaces with underscores for file naming
-        joblib.dump(model, f'models/dry/rf_{track_id}_model.pkl')
+        joblib.dump(model, f'models/dry/rf_{track_id}.pkl')
         joblib.dump(X.columns.tolist(), f'models/dry/cols_{track_id}.pkl') # save the feature names for later use
 
         results[track] = mae

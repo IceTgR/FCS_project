@@ -4,7 +4,7 @@ from feature_01 import write_chosen_options, race_simulation
 from car import Car
 from InterfaceDM import main
 
-#main()
+main()
 
 # Track whether the simulation has been started in the current Streamlit session.
 if 'race_started' not in st.session_state: # to check if race has started, if not, initialize it to False

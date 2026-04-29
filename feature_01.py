@@ -30,7 +30,7 @@ def race_simulation():
             st.rerun(scope = 'app')
 
         # Let user pick next tire compound for an optional pit stop.
-        new_tire = st.radio('Choose your tire incase you want to pit', ['soft', 'medium', 'hard'])
+        new_tire = st.radio('Choose your tire incase you want to pit', ['SOFT', 'MEDIUM', 'HARD'])
         # Enter pit lane and switch to the selected tire.
         if st.button('Pit Stop'):
             st.session_state.player.box(new_tire)

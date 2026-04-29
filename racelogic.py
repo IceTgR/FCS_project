@@ -4,6 +4,7 @@ import random
 import streamlit as st
 import pandas as pd
 from car import Car
+from opponents import advance_opponents, build_opponent_table
 
 
 def roll_safety_event():
@@ -75,6 +76,8 @@ def apply_safety_event_effect(car):
 def write_chosen_options():
     st.write(f'You have selected {st.session_state.player.team} as your team, '
         f'starting on {st.session_state.player.tire} tires at the {st.session_state.track} track.')
+    if hasattr(st.session_state, 'opponents'):
+        st.write(f'The field now contains {len(st.session_state.opponents)} AI opponents.')
     
 def race_simulation():
     # Display the current race status at the top of the screen.
@@ -103,6 +106,14 @@ def race_simulation():
             roll_safety_event()
             apply_safety_event_effect(st.session_state.player)
             st.session_state.player.advance_lap(st.session_state.safety_event_status)
+            if hasattr(st.session_state, 'opponents'):
+                advance_opponents(
+                    st.session_state.opponents,
+                    st.session_state.total_laps,
+                    st.session_state.safety_event_status,
+                    get_safety_event_lap_multiplier(),
+                    get_safety_event_pitstop_multiplier(),
+                )
             resolve_safety_event()
             st.rerun(scope = 'app')
 
@@ -117,6 +128,14 @@ def race_simulation():
                 st.session_state.safety_event_status,
                 pitstop_multiplier=get_safety_event_pitstop_multiplier(),
             )
+            if hasattr(st.session_state, 'opponents'):
+                advance_opponents(
+                    st.session_state.opponents,
+                    st.session_state.total_laps,
+                    st.session_state.safety_event_status,
+                    get_safety_event_lap_multiplier(),
+                    get_safety_event_pitstop_multiplier(),
+                )
             resolve_safety_event()
             st.rerun(scope = 'app')
 
@@ -129,6 +148,11 @@ def race_simulation():
             chart_data = history['Lap Time'], chart_type = 'line', border = True, delta_color = 'inverse')
     
     st.table(history) if st.session_state.player.lap > 1 else st.write('No history yet, this is your first lap!')
+
+    if hasattr(st.session_state, 'opponents'):
+        st.subheader('Opponents')
+        opponent_history = pd.DataFrame(build_opponent_table(st.session_state.opponents, st.session_state.total_laps))
+        st.table(opponent_history)
 
 
     

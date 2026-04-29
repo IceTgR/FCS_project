@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from racelogic import write_chosen_options, race_simulation
 from car import Car
+from opponents import create_opponents
 # from InterfaceDM import main
 from train_models import train_models
 
@@ -82,6 +83,7 @@ if not st.session_state.race_started:
         elif st.session_state.track == 'British Grand Prix':
             st.session_state.player = Car(team_player, 'British Grand Prix', tire_start) # create an instance for Silverstone
             st.session_state.total_laps = 52 # set total laps for Silverstone
+        st.session_state.opponents = create_opponents(team_player, st.session_state.track, st.session_state.total_laps)
         st.rerun(scope='app')
 
 # Race screen: show selected options and advance race state lap by lap.

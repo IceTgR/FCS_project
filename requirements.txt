@@ -5,3 +5,4 @@ fastf1
 plotly
 joblib
 scikit-learn
+numpy<2.0

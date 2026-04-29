@@ -51,7 +51,7 @@ MIN_EVENT_PIT_AGE_SC = {
     'HARD': 12,
 }
 
-MIN_BONUS_PIT_AGE_VSC = {
+MIN_EVENT_PIT_AGE_VSC = {
     'SOFT': 10,
     'MEDIUM': 14,
     'HARD': 20,

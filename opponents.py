@@ -43,6 +43,20 @@ STARTING_TIRE_STRATEGIES = {
     },
 }
 
+# Reifenalter- und Event-Schwellwerte steuern, wie früh ein Gegner sinnvoll stoppen kann.
+
+MIN_EVENT_PIT_AGE_SC = {
+    'SOFT': 7,
+    'MEDIUM': 10,
+    'HARD': 12,
+}
+
+MIN_BONUS_PIT_AGE_VSC = {
+    'SOFT': 10,
+    'MEDIUM': 14,
+    'HARD': 20,
+}
+
 class Opponent:
     """Ein KI-Gegner mit Auto und einfacher Strategie."""
 
@@ -53,7 +67,6 @@ class Opponent:
         self.starting_tire = starting_tire
         self.pit_lap = pit_lap
         self.next_compound = next_compound
-        self.has_pitted = False
 
 
 def _weighted_choice(weighted_values):
@@ -98,6 +111,43 @@ def _pit_lap_for_starting_tire(team, starting_tire, total_laps):
     return pit_lap
 
 
+def _event_stop_compound(current_tire):
+    """Wählt für einen kurzfristigen Event-Stopp einen passenden Reifen."""
+    # Bei einem kurzfristigen Event-Stopp wird ein frischer Reifen gewählt.
+    # Die Wahl hängt vom aktuellen Reifen ab, ist aber nicht deterministisch.
+    if current_tire == 'SOFT':
+        return _weighted_choice([('MEDIUM', 0.35), ('HARD', 0.65)])
+    if current_tire == 'HARD':
+        return _weighted_choice([('SOFT', 0.45), ('MEDIUM', 0.55)])
+    return _weighted_choice([('SOFT', 0.50), ('HARD', 0.50)])
+
+
+def _should_take_event_stop(opponent, safety_event_status):
+    """Entscheidet, ob ein Gegner unter SC/VSC zusätzlich stoppen sollte."""
+    if safety_event_status not in ('SAFETYCAR', 'VSC'):
+        return False
+
+    # Nach dem ersten geplanten Stop können weitere Stops unter Events stattfinden.
+    # Maximal 3 Stops, um nicht unrealistisch zu werden.
+    if opponent.car.pitstop_counter >= 3:
+        return False
+
+    tire = opponent.car.tire
+    tire_age = opponent.car.tire_age
+    required_age = EVENT_BONUS_PIT_AGE[tire]
+
+    if safety_event_status == 'SAFETYCAR':
+        if tire_age < MIN_EVENT_PIT_AGE[tire]:
+            return False
+        
+    if safety_event_status == 'VSC':
+        if tire_age < required_age:
+            return False
+
+    # Event-Stop möglich nach jedem regulären/Event-Stop, solange Reifenalter passt.
+    return True
+
+
 def create_opponents(player_team, track, total_laps):
     """Erzeugt pro nicht gewähltem Team genau einen Gegner."""
     opponents = []
@@ -136,14 +186,17 @@ def advance_opponents(opponents, total_laps, safety_event_status, lap_multiplier
         car.predict_lap_time()
         car.lap_time *= lap_multiplier
 
-        if car.lap == opponent.pit_lap:
-            # Beim geplanten Stopp wird der Gegner direkt in die Box geschickt.
+        planned_stop = car.pitstop_counter == 0 and car.lap == opponent.pit_lap
+        event_stop = _should_take_event_stop(opponent, safety_event_status)
+
+        if planned_stop or event_stop:
+            # Erst der normale Stopp, zusätzlich bei SC/VSC ein möglicher Bonus-Stop.
+            new_tire = opponent.next_compound if planned_stop else _event_stop_compound(car.tire)
             car.box(
-                opponent.next_compound,
+                new_tire,
                 safety_event_status,
                 pitstop_multiplier=pitstop_multiplier,
             )
-            opponent.has_pitted = True
         else:
             # Ansonsten fährt der Gegner einfach die Runde zu Ende.
             car.advance_lap(safety_event_status)
@@ -160,6 +213,7 @@ def build_opponent_table(opponents, total_laps):
                 'Team': opponent.team,
                 'Start Tire': opponent.starting_tire,
                 'Current Lap': opponent.car.lap,
+                'Pit Stops': opponent.car.pitstop_counter,
                 'Last Lap Time': round(last_lap_time, 2),
                 'Tire': opponent.car.tire,
                 'Tire Age': opponent.car.tire_age,

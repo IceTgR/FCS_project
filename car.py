@@ -177,9 +177,9 @@ class Car:
 
             # Apply additional tire wear penalty for older tires
             # This amplifies the tire degradation effect for more realistic behavior
-            if self.tire_age > 10:
-                tire_wear_penalty = 1 + (self.tire_age - 10) * 0.008  # +0.8% per lap after lap 10
-                prediction *= tire_wear_penalty
+            #if self.tire_age > 10:
+             #   tire_wear_penalty = 1 + (self.tire_age - 10) * 0.008  # +0.8% per lap after lap 10
+              #  prediction *= tire_wear_penalty
 
             # if self.safety_car:
             # prediction *= 1.5 # Safety car conditions increase lap time by 50%

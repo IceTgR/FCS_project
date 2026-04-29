@@ -1,5 +1,10 @@
 """This is the car module, which contains the Car class."""
 
+import joblib
+import pandas as pd
+import os
+from ML_lap_times import train_dry_models
+
 class Car:
     """This is the Car class, which represents a F1 car."""
 
@@ -34,8 +39,8 @@ class Car:
     @tire.setter
     def tire(self, value):
         """Set the cars tire."""
-        if value not in ["soft", "medium", "hard"]:
-            raise ValueError("Tire must be 'soft', 'medium', or 'hard'.")
+        if value not in ["SOFT", "MEDIUM", "HARD"]:
+            raise ValueError("Tire must be 'SOFT', 'MEDIUM', or 'HARD'.")
         self._tire = value
 
     @property
@@ -143,10 +148,36 @@ class Car:
         """Simulate the car aging its tires by a certain number of laps."""
         self.tire_age += laps
 
-    def calculate_lap_time(self, base_time):
-        """Calculate the lap time based on the base time and the tire age."""
-        if self.safety_car:
-            return base_time * 1.5  # Safety car conditions increase lap time by 50%
+    def predict_lap_time(self, air_temp=25, is_raining=False):
+        """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
+
+        if is_raining == False:
+            model_path = f'models/dry/rf_{self.track}.pkl'
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model file not found for track {self.track}. Please train the model first.")
+            model = joblib.load(model_path)
+            saved_cols = joblib.load(f'models/dry/cols_{self.track}.pkl')
+
+            # add live data to the model input
+            row = {
+                'Team': self.team,
+                'Compound': self.tire,
+                'TyreLife': self.tire_age,
+                'AirTemp': air_temp,
+                'LapNumber': self.lap,
+            }
+
+            df = pd.DataFrame([row])
+            df = pd.get_dummies(df, columns=['Team', 'Compound'])
+            df = df.reindex(columns=saved_cols, fill_value=0)
+
+            prediction = float(model.predict(df)[0])
+
+            # if self.safety_car:
+            # prediction *= 1.5 # Safety car conditions increase lap time by 50%
+
+        return prediction
+        
         
         tire_wear_factor = 1 + (self.tire_age * 0.02)  # Each lap on the same tires increases lap time by 2%
         return base_time * tire_wear_factor

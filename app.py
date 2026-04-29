@@ -28,7 +28,7 @@ if not st.session_state.race_started:
 
     st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
 
-    tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
+    tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
 
     # Build the correct car object based on track and begin the race loop.
     if st.button('Start the simulation'):

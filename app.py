@@ -24,9 +24,9 @@ if not st.session_state.race_started:
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
     col1, col2, col3 = st.columns(3)
-    driver_player = col1.selectbox('Select your driver:', ['Lewis Hamilton', 'Charles Leclerc'])
+    team_player = col1.selectbox('Select your team:', ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'])
 
-    st.session_state.track = col2.selectbox('Select the track:', ['Monaco', 'Silverstone'])
+    st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
 
     tire_start = col3.radio('Choose your starting tire:', ['soft', 'medium', 'hard'])
 
@@ -34,10 +34,10 @@ if not st.session_state.race_started:
     if st.button('Start the simulation'):
         st.session_state.race_started = True
         if st.session_state.track == 'Monaco':
-            st.session_state.player = Car_Monaco(driver_player, tire_start) # create an instance for Monaco
+            st.session_state.player = Car(driver_player, 'Monaco Grand Prix', tire_start) # create an instance for Monaco
             st.session_state.total_laps = 78 # set total laps for Monaco
         elif st.session_state.track == 'Silverstone':
-            st.session_state.player = Car_Silverstone(driver_player, tire_start) # create an instance for Silverstone
+            st.session_state.player = Car_Silverstone(driver_player, 'British Grand Prix' tire_start) # create an instance for Silverstone
             st.session_state.total_laps = 52 # set total laps for Silverstone
         st.rerun(scope='app')
 

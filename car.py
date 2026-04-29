@@ -3,10 +3,10 @@
 class Car:
     """This is the Car class, which represents a F1 car."""
 
-    def __init__(self, driver, tire):
+    def __init__(self, team, track, tire):
         """Initialize the Car object."""
-        self._driver = driver
-        self._team = 'Ferrari'
+        self._team = team
+        self._track = track
         self.tire = tire
         self.tire_age = 0
         self.lap = 1
@@ -17,15 +17,15 @@ class Car:
         self.pitstop_counter = 0
 
     @property
-    def driver(self):
-        """Return the cars driver."""
-        return self._driver
-    
-    @property
     def team(self):
-        """Return the cars team."""
+        """Return the cars driver."""
         return self._team
     
+    @property
+    def track(self):
+        """Return the cars track."""
+        return self._track
+        
     @property
     def tire(self):
         """Return the cars tire."""
@@ -137,10 +137,19 @@ class Car:
         self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Pitstop': 'Yes'})
         self.lap += 1
         self.pitstop_counter += 1
+        self.laptime += 20.0 # Simulate the time lost in the pitstop (this can be adjusted based on the track and conditions)
 
     def age_tires(self, laps):
         """Simulate the car aging its tires by a certain number of laps."""
         self.tire_age += laps
+
+    def calculate_lap_time(self, base_time):
+        """Calculate the lap time based on the base time and the tire age."""
+        if self.safety_car:
+            return base_time * 1.5  # Safety car conditions increase lap time by 50%
+        
+        tire_wear_factor = 1 + (self.tire_age * 0.02)  # Each lap on the same tires increases lap time by 2%
+        return base_time * tire_wear_factor
 
     def __repr__(self):
         """return a string representation for repr()."""

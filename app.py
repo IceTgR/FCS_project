@@ -89,37 +89,33 @@ if not st.session_state.race_started:
 
 # Race screen: show selected options and advance race state lap by lap.
 if st.session_state.race_started:
-    # 1. Create a Sidebar for the ML Advice (The "Corner Window")
-    with st.sidebar:
-        st.header("🎧 Pit Wall Radio")
-        
-        # Only run the heavy ML simulation once to save performance
-        if 'ideal_lap' not in st.session_state:
-            with st.spinner("AI is calculating the optimal path..."):
-                # Use current session state variables for the simulation
-                st.session_state.ideal_lap = find_optimal_pit_lap(
-                    track_name=st.session_state.track,
-                    total_laps=st.session_state.total_laps,
-                    team=st.session_state.player.team, # Assumes Car object has .team
-                    start_compound=st.session_state.player.tire, # Assumes Car object has .tire
-                    next_compound='HARD', # Standard strategy target
-                    air_temp=25.0,
-                    pit_window_start=10,
-                    pit_window_end=st.session_state.total_laps - 10
-                )
-        
-        st.subheader("🤖 ML Strategist Advice")
-        st.write(f"Based on our simulations, the mathematically fastest strategy is to pit on:")
-        st.info(f"**LAP {st.session_state.ideal_lap}**")
-        
-        # Comparison logic
-        current_lap = st.session_state.player.lap_count # Adjust based on your Car class
-        if current_lap == st.session_state.ideal_lap:
-            st.warning("⚠️ BOX NOW: You are on the ideal pit lap!")
-        elif current_lap > st.session_state.ideal_lap and not st.session_state.player.pitted:
-            st.error("📉 You have passed the ideal pit window. Tires are losing efficiency!")
+    # --- ADD THIS CHECK HERE ---
+    if 'player' in st.session_state:
+        with st.sidebar:
+            st.header("🎧 Pit Wall Radio")
+            
+            # Use current lap from the player object safely
+            # Note: Verify if your Car class uses 'lap_count' or 'current_lap'
+            current_lap = st.session_state.player.lap_count 
+            
+            if 'ideal_lap' not in st.session_state:
+                with st.spinner("AI is calculating the optimal path..."):
+                    st.session_state.ideal_lap = find_optimal_pit_lap(
+                        track_name=st.session_state.track,
+                        total_laps=st.session_state.total_laps,
+                        team=st.session_state.player.team,
+                        start_compound=st.session_state.player.tire,
+                        next_compound='HARD',
+                        air_temp=25.0,
+                        pit_window_start=10,
+                        pit_window_end=st.session_state.total_laps - 10
+                    )
+            
+            st.subheader("🤖 ML Strategist Advice")
+            st.info(f"**Ideal Pit Lap: {st.session_state.ideal_lap}**")
+            st.write(f"Current Lap: {current_lap}")
 
-    # 2. Continue with the standard simulation
+    # Standard simulation calls
     write_chosen_options()
     race_simulation()
 

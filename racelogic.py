@@ -149,10 +149,13 @@ def race_simulation():
     
     st.table(history) if st.session_state.player.lap > 1 else st.write('No history yet, this is your first lap!')
 
-    if hasattr(st.session_state, 'opponents'):
-        st.subheader('Opponents')
-        opponent_history = pd.DataFrame(build_opponent_table(st.session_state.opponents, st.session_state.total_laps))
+    st.subheader('Opponents')
+    opponents = st.session_state.get('opponents')
+    if opponents:
+        opponent_history = pd.DataFrame(build_opponent_table(opponents, st.session_state.total_laps))
         st.table(opponent_history)
+    else:
+        st.write('No opponents have been created yet.')
 
 
     

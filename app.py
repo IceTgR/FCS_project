@@ -125,7 +125,7 @@ if st.session_state.race_started:
     # REPLACE WITH THIS:
     if 'player' in st.session_state:
         write_chosen_options()
-    race_simulation()
+        race_simulation()
 
     # Mid-race ML strategist: allow re-running the optimizer during the race
     with st.expander("🏁 Mid-Race ML Strategist", expanded=False):

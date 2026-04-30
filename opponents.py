@@ -182,7 +182,8 @@ def advance_opponents(opponents, total_laps, safety_event_status, lap_multiplier
             continue
 
         # Erst die normale Rundenzeit berechnen, dann die Rennleitungs-Effekte anwenden.
-        car.predict_lap_time()
+        air_temp = st.session_state.get('air_temp', 25)
+        car.predict_lap_time(air_temp=air_temp)
         car.lap_time *= lap_multiplier
 
         planned_stop = car.pitstop_counter == 0 and car.lap == opponent.pit_lap

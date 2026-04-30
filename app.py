@@ -16,6 +16,17 @@ if 'race_started' not in st.session_state: # to check if race has started, if no
 
 st.title('F1 Race Strategy Simulator')
 
+# Track-specific temperature ranges (realistic F1 conditions)
+TRACK_TEMP_RANGES = {
+    'Monaco Grand Prix': {'min': 16, 'max': 28, 'default': 22},      # May, mild Mediterranean weather
+    'British Grand Prix': {'min': 14, 'max': 26, 'default': 20},     # July, UK climate
+    'Spa': {'min': 12, 'max': 24, 'default': 18},                    # August, Belgian Ardennes (cool, variable)
+    'Monza': {'min': 18, 'max': 32, 'default': 25},                  # September, warm Italian summer
+    'Suzuka': {'min': 20, 'max': 30, 'default': 25},                 # September/October, Japanese autumn
+    'Bahrain': {'min': 24, 'max': 38, 'default': 31},                # March, desert heat
+    'Melbourne': {'min': 18, 'max': 32, 'default': 25},              # March, Australian summer
+}
+
 # Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
     st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
@@ -32,6 +43,19 @@ if not st.session_state.race_started:
     st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
 
     tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
+
+    # Temperature slider with track-specific ranges
+    st.markdown("---")
+    track_temps = TRACK_TEMP_RANGES.get(st.session_state.track, {'min': 15, 'max': 30, 'default': 22})
+    air_temp = st.slider(
+        '🌡️ Air Temperature (°C)',
+        min_value=track_temps['min'],
+        max_value=track_temps['max'],
+        value=track_temps['default'],
+        step=1,
+        help=f"Set the ambient air temperature for {st.session_state.track}. Typical race conditions range from {track_temps['min']}°C to {track_temps['max']}°C."
+    )
+    st.session_state.air_temp = air_temp
 
     # --- NEW ML STRATEGIST WINDOW HERE ---
     # Determine the laps for the AI simulation before the race starts
@@ -51,7 +75,7 @@ if not st.session_state.race_started:
                     team=team_player, 
                     start_compound=tire_start, 
                     next_compound='HARD',
-                    air_temp=25.0, 
+                    air_temp=st.session_state.air_temp, 
                     pit_window_start=10, 
                     pit_window_end=sim_laps - 15
                 )
@@ -104,7 +128,7 @@ if st.session_state.race_started:
                         team=st.session_state.player.team,
                         start_compound=st.session_state.player.tire,
                         next_compound=next_compound,
-                        air_temp=25.0,
+                        air_temp=st.session_state.air_temp,
                         pit_window_start=st.session_state.player.lap + 1,
                         pit_window_end=st.session_state.total_laps - 1,
                     )

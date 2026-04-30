@@ -20,11 +20,6 @@ st.title('F1 Race Strategy Simulator')
 TRACK_TEMP_RANGES = {
     'Monaco Grand Prix': {'min': 16, 'max': 28, 'default': 22},      # May, mild Mediterranean weather
     'British Grand Prix': {'min': 14, 'max': 26, 'default': 20},     # July, UK climate
-    'Spa': {'min': 12, 'max': 24, 'default': 18},                    # August, Belgian Ardennes (cool, variable)
-    'Monza': {'min': 18, 'max': 32, 'default': 25},                  # September, warm Italian summer
-    'Suzuka': {'min': 20, 'max': 30, 'default': 25},                 # September/October, Japanese autumn
-    'Bahrain': {'min': 24, 'max': 38, 'default': 31},                # March, desert heat
-    'Melbourne': {'min': 18, 'max': 32, 'default': 25},              # March, Australian summer
 }
 
 # Start screen: show intro and collect race setup options.

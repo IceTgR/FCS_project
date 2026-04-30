@@ -54,13 +54,7 @@ if not st.session_state.race_started:
         st.session_state.target_tire = target_tire # Save for the AI function
         # ... rest of your car initialization logic ...
 
-    # User input for driver, track, and starting tire, which is needed to start the simulation
-    col1, col2, col3 = st.columns(3)
-    team_player = col1.selectbox('Select your team:', ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'])
 
-    st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
-
-    tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
 
     # Temperature slider with track-specific ranges
     st.markdown("---")

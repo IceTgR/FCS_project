@@ -31,8 +31,8 @@ if not st.session_state.race_started:
 
 
     
-   # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
-    train_models() 
+       # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
+        train_models() 
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
     col1, col2, col3 = st.columns(3)

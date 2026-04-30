@@ -2,6 +2,7 @@ import pandas as pd
 import joblib
 import numpy as np
 import os
+from ML_lap_times import predict_lap_time
 
 def load_track_model(track_name, condition="dry"):
     """Loads the trained ML model and its training columns for a specific track."""

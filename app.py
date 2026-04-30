@@ -53,9 +53,7 @@ if not st.session_state.race_started:
     # When the Start Button is clicked, save these to the session state
     if st.button('Start the simulation', use_container_width=True):
         st.session_state.race_started = True
-        st.session_state.target_tire = target_tire # Save for the AI function
-        # ... rest of your car initialization logic ...
-
+  
 
 
     # Temperature slider with track-specific ranges

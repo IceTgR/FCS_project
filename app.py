@@ -121,11 +121,26 @@ if not st.session_state.race_started:
         st.rerun(scope='app')
 
 # Race screen: show selected options and advance race state lap by lap.
-if st.session_state.race_started:
-    # REPLACE WITH THIS:
-    if 'player' in st.session_state:
-        write_chosen_options()
-        race_simulation()
+# --- MAIN RACE DISPLAY ---
+if st.session_state.get('race_started', False) and 'player' in st.session_state:
+    
+    # Create columns to keep the button small and tucked in the top left
+    col_back, col_title = st.columns([1, 5]) 
+    
+    with col_back:
+        # The button to exit the simulation
+        if st.button("⬅️ Back"):
+            # Reset the state and reload the app to show the main menu
+            st.session_state.race_started = False
+            st.rerun()
+            
+    with col_title:
+        st.write("### 🏁 The Race is On!")
+    
+    st.divider()
+
+    write_chosen_options()
+    race_simulation()
 
     # Mid-race ML strategist: allow re-running the optimizer during the race
     with st.expander("🏁 Mid-Race ML Strategist", expanded=False):

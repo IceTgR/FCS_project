@@ -6,10 +6,10 @@ def render_team_selector():
     # F1 Team Hex Colors (Just the requested 5)
     team_colors = {
         "Ferrari": "#DC0000",       # Ferrari Red
-        "Red Bull": "#1E41FF",      # Racing Blue
+        "Red Bull": "#121F45",      # Dark Navy Blue
         "Mercedes": "#00A19C",      # Petronas Teal
         "McLaren": "#FF8000",       # Papaya Orange
-        "Aston Martin": "#229971",  # British Racing Green
+        "Williams": "#005AFF",      # Bright True Blue
     }
 
     # Initialize the selected team in session state if it doesn't exist

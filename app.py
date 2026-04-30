@@ -75,45 +75,43 @@ if not st.session_state.race_started:
     )
     st.session_state.air_temp = air_temp
 
-    # --- NEW ML STRATEGIST WINDOW HERE ---
+   # --- NEW ML STRATEGIST WINDOW HERE ---
     # Determine the laps for the AI simulation before the race starts
     sim_laps = 78 if st.session_state.track == 'Monaco Grand Prix' else 52
     
     with st.expander("🏎️ ML Strategist Briefing", expanded=True):
         st.write("Let our AI simulate the race to find your mathematically fastest pit stop strategy!")
         
- 
-        
-    if st.button("Ask the AI for the Optimal Pit Lap"):
-        with st.spinner("Simulating race times..."):
-            try:
-                best_lap = find_optimal_pit_lap(
-                    track_name=st.session_state.track, 
-                    total_laps=sim_laps,             
-                    team=team_player, 
-                    start_compound=tire_start, 
-                    next_compound='HARD',
-                    air_temp=st.session_state.air_temp, 
-                    pit_window_start=10, 
-                    pit_window_end=sim_laps - 15
-                )
-                
-                st.success(f"**Optimal Strategy Found:** The AI recommends pitting on Lap {best_lap}!")
-                
-                # --- DYNAMIC EXPLANATION SECTION ---
-                st.markdown("### 💡 Why this lap?")
-                
-                if team_player in ['Red Bull', 'Mercedes']:
-                    st.info(f"**Efficiency Profile:** {team_player} historically shows better tire management. The AI suggests pushing until Lap {best_lap} because your car maintains pace even as the rubber thins, allowing for a shorter, faster final stint.")
-                elif team_player in ['Ferrari', 'McLaren']:
-                    st.info(f"**Performance Peak:** {team_player} has high peak grip but faster drop-off. Pitting on Lap {best_lap} avoids the 'cliff' where your lap times would collapse, ensuring you switch to fresh Hards right as your Softs lose their edge.")
-                else:
-                    st.info(f"**Risk Mitigation:** For {team_player}, the AI prioritizes track position. Pitting on Lap {best_lap} minimizes the time spent on degraded tires where your car is most vulnerable to being overtaken.")
+        if st.button("Ask the AI for the Optimal Pit Lap", use_container_width=True):
+            with st.spinner("Simulating multi-compound race times..."):
+                try:
+                    # --- STEP 3 INTEGRATED HERE ---
+                    best_lap = find_optimal_pit_lap(
+                        track_name=st.session_state.track, 
+                        total_laps=sim_laps,             
+                        team=team_player, 
+                        start_compound=tire_start, 
+                        next_compound=target_tire, # Now uses the tire they chose from the menu!
+                        air_temp=st.session_state.air_temp 
+                    )
+                    
+                    # Updated success message to show the tire switch
+                    st.success(f"**Optimal Strategy Found:** Pit on Lap {best_lap} to switch from {tire_start} to {target_tire}s!")
+                    
+                    # --- DYNAMIC EXPLANATION SECTION ---
+                    st.markdown("### 💡 Why this lap?")
+                    
+                    if team_player in ['Red Bull', 'Mercedes']:
+                        st.info(f"**Efficiency Profile:** {team_player} historically shows better tire management. The AI suggests pushing until Lap {best_lap} because your car maintains pace even as the rubber thins, allowing for a shorter, faster final stint.")
+                    elif team_player in ['Ferrari', 'McLaren']:
+                        st.info(f"**Performance Peak:** {team_player} has high peak grip but faster drop-off. Pitting on Lap {best_lap} avoids the 'cliff' where your lap times would collapse, ensuring you switch to fresh {target_tire}s right as your {tire_start}s lose their edge.")
+                    else:
+                        st.info(f"**Risk Mitigation:** For {team_player}, the AI prioritizes track position. Pitting on Lap {best_lap} minimizes the time spent on degraded tires where your car is most vulnerable to being overtaken.")
 
-            except FileNotFoundError:
-                st.error("Model not found! Make sure to click 'Train Models Now' first.")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+                except FileNotFoundError:
+                    st.error("Model not found! Make sure to click 'Train Models Now' first.")
+                except Exception as e:
+                    st.error(f"An error occurred during simulation: {e}")
     # -------------------------------------
 
     # Build the correct car object based on track and begin the race loop.

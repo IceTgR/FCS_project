@@ -65,47 +65,36 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
     
     return total_time
 
-def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp, pit_window_start, pit_window_end):
-    """Loops through all realistic pit laps to find the minimum total race time."""
-    
-    print(f"--- Strategy Analysis: {team} at {track_name} ---")
-    print(f"Strategy: {start_compound} -> {next_compound}")
-    
-    # Load the ML model
-    model, train_cols = load_track_model(track_name)
-    
-    best_lap = None
-    best_time = float('inf')
-    
-    # Test every single lap in the pit window
-    for pit_lap in range(pit_window_start, pit_window_end + 1):
-        race_time = simulate_race_time(
-            model=model,
-            train_cols=train_cols,
-            total_laps=total_laps,
-            team=team,
-            start_compound=start_compound,
-            next_compound=next_compound,
-            pit_lap=pit_lap,
-            air_temp=air_temp,
-            pit_loss_sec=22.0 # Average pit lane loss
-        )
+def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
+    """
+    Simulates the entire race for every possible pit lap to find the 
+    mathematically fastest strategy using ML predictions.
+    """
+    best_total_time = float('inf')
+    best_lap = 0
+
+    # Test every possible lap as a potential pit stop lap (e.g., between lap 10 and the end)
+    for pit_lap in range(10, total_laps - 5):
+        total_race_time = 0
+        current_compound = start_compound
         
-        # Convert total seconds to Hours:Minutes:Seconds for readability
-        hours, remainder = divmod(race_time, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        time_str = f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
-        
-        print(f"Pit Lap {pit_lap}: Est. Race Time = {time_str}")
-        
-        if race_time < best_time:
-            best_time = race_time
+        for lap in range(1, total_laps + 1):
+            # 1. Predict lap time based on the tire CURRENTLY on the car
+            # This uses the ML model to account for tire wear/degradation
+            lap_time = predict_lap_time(track_name, team, current_compound, lap, air_temp)
+            total_race_time += lap_time
+            
+            # 2. THE PIT STOP LOGIC:
+            # If we reach our 'test' pit lap, swap to the target tire and add pit loss
+            if lap == pit_lap:
+                current_compound = next_compound # This is your 'Target Pit Tire'
+                total_race_time += 22.0          # Estimated time lost in a pit stop (s)
+                
+        # 3. Compare this strategy to the best one found so far
+        if total_race_time < best_total_time:
+            best_total_time = total_race_time
             best_lap = pit_lap
             
-    # Print the final verdict
-    print("\n✅ OPTIMAL STRATEGY FOUND ✅")
-    print(f"The AI recommends pitting on Lap {best_lap}.")
-    
     return best_lap
 
 # ==========================================

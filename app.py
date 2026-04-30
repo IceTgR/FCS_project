@@ -122,7 +122,9 @@ if not st.session_state.race_started:
 
 # Race screen: show selected options and advance race state lap by lap.
 if st.session_state.race_started:
-    write_chosen_options()
+    # REPLACE WITH THIS:
+    if 'player' in st.session_state:
+        write_chosen_options()
     race_simulation()
 
     # Mid-race ML strategist: allow re-running the optimizer during the race

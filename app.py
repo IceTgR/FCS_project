@@ -36,25 +36,28 @@ if not st.session_state.race_started:
     if 'selected_team' not in st.session_state:
         st.session_state.selected_team = 'Ferrari'
     
-    # --- THEME INJECTION ---
+    # --- THEME INJECTION WITH 50% SHADING ---
     current_style = team_branding[st.session_state.selected_team]
     st.markdown(f"""
         <style>
-        /* Change the main app background */
+        /* Change the main app background with a 50% black overlay for shading */
         .stApp {{
-            background-color: {current_style['bg']};
-            transition: background-color 0.5s ease;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), {current_style['bg']};
+            transition: background 0.5s ease;
         }}
-        /* Ensure all text tags are readable against the team color */
+        
+        /* Ensure text stays white and readable against the shaded background */
         h1, h2, h3, p, span, label, .stMarkdown {{
             color: {current_style['text']} !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Adds shadow to text too */
         }}
-        /* Style the standard Streamlit buttons */
+    
+        /* Style the buttons to pop against the darker background */
         div.stButton > button {{
             background-color: {current_style['accent']};
-            color: {current_style['bg']};
-            border-radius: 10px;
-            font-weight: bold;
+            color: black;
+            border: none;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.5); /* 50% shadow on buttons */
         }}
         </style>
     """, unsafe_allow_html=True)

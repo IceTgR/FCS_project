@@ -60,3 +60,45 @@ def train_dry_models(df_dry):
         print(f'Modell für {track} gespeichert.')
 
     return results
+
+
+
+
+
+
+def predict_lap_time(track_name, team, compound, lap_number, air_temp):
+    # Format the track name exactly how you saved it
+    track_id = track_name.replace(' ', '_')
+    model_path = f'models/dry/rf_{track_id}.pkl'
+    cols_path = f'models/dry/cols_{track_id}.pkl'
+
+    if not os.path.exists(model_path):
+        return 80.0 + (lap_number * 0.1) # Safe fallback just in case the model isn't trained!
+
+    # Load the model
+    model = joblib.load(model_path)
+    model_columns = joblib.load(cols_path)
+
+    # Create a DataFrame for this single lap
+    input_data = pd.DataFrame({
+        'LapNumber': [lap_number],
+        'TyreLife': [lap_number], # Assuming tire age matches lap number for now
+        'AirTemp': [air_temp]
+    })
+
+    # Add dummy columns with 0s
+    for col in model_columns:
+        if col not in input_data.columns:
+            input_data[col] = 0
+
+    # Set the specific team and compound to 1
+    if f'Team_{team}' in input_data.columns:
+        input_data[f'Team_{team}'] = 1
+    if f'Compound_{compound}' in input_data.columns:
+        input_data[f'Compound_{compound}'] = 1
+
+    input_data = input_data[model_columns]
+
+    # Predict and return the time
+    return model.predict(input_data)[0]
+    

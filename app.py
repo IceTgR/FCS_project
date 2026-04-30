@@ -23,56 +23,22 @@ TRACK_TEMP_RANGES = {
     'British Grand Prix': {'min': 14, 'max': 26, 'default': 20},     # July, UK climate
 }
 
+
 # Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
-    st.write(f'You are now in the seat of the F1 race strategist!')
-    st.write(f'Prepare yourself to make crucial decisions on pit stops and guide your driver to victory!')
+    st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
+         f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
+         f'guide your driver to victory!')
 
-    # Modul zum Daten laden und Modell trainieren
+   # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
     train_models() 
 
-    # --- TEAM SELECTION BUTTONS ---
-    st.write("### Select Your Team")
-    teams = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
-    
-    # Create 5 columns for the buttons
-    team_cols = st.columns(5)
-    
-    # Initialize selected_team if it doesn't exist
-    if 'selected_team' not in st.session_state:
-        st.session_state.selected_team = 'Ferrari'
+    # User input for driver, track, and starting tire, which is needed to start the simulation
+    col1, col2, col3 = st.columns(3)
+    team_player = col1.selectbox('Select your team:', ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams'])
 
-    for i, team in enumerate(teams):
-        with team_cols[i]:
-            if st.button(team, key=f"btn_{team}", use_container_width=True):
-                st.session_state.selected_team = team
+    st.session_state.track = col2.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
 
-    # Store the choice into team_player
-    team_player = st.session_state.selected_team
-    st.info(f"Currently selected: **{team_player}**")
-
-    st.divider() # Adds a nice visual break
-
-    # --- TRACK AND TIRE SELECTION ---
-    # We use 2 columns here since team selection is handled above
-    col_track, col_tire = st.columns(2)
-    
-    with col_track:
-        st.session_state.track = st.selectbox('Select the track:', ['Monaco Grand Prix', 'British Grand Prix'])
-
-    with col_tire:
-        tire_start = st.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
-
-    # Start Button logic
-    if st.button('Start the simulation', use_container_width=True):
-        st.session_state.race_started = True
-        if st.session_state.track == 'Monaco Grand Prix':
-            st.session_state.player = Car(team_player, 'Monaco Grand Prix', tire_start)
-            st.session_state.total_laps = 78
-        elif st.session_state.track == 'British Grand Prix':
-            st.session_state.player = Car(team_player, 'British Grand Prix', tire_start)
-            st.session_state.total_laps = 52
-        st.rerun()
     tire_start = col3.radio('Choose your starting tire:', ['SOFT', 'MEDIUM', 'HARD'])
 
     # Temperature slider with track-specific ranges

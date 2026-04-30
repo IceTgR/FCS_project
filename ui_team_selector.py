@@ -3,7 +3,7 @@ import streamlit as st
 def render_team_selector():
     st.write("### 🏎️ Select Your Team")
     
-    # F1 Team Hex Colors (Just the requested 5)
+    # F1 Team Hex Colors 
     team_colors = {
         "Ferrari": "#DC0000",       # Ferrari Red
         "Red Bull": "#121F45",      # Dark Navy Blue

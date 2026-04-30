@@ -36,28 +36,45 @@ if not st.session_state.race_started:
     if 'selected_team' not in st.session_state:
         st.session_state.selected_team = 'Ferrari'
     
-    # --- THEME INJECTION WITH 50% SHADING ---
+       # --- THEME INJECTION ---
     current_style = team_branding[st.session_state.selected_team]
     st.markdown(f"""
         <style>
-        /* Change the main app background with a 50% black overlay for shading */
+        /* 1. Main Background with 50% shading */
         .stApp {{
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), {current_style['bg']};
-            transition: background 0.5s ease;
-        }}
-        
-        /* Ensure text stays white and readable against the shaded background */
-        h1, h2, h3, p, span, label, .stMarkdown {{
-            color: {current_style['text']} !important;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Adds shadow to text too */
+            transition: background-color 0.5s ease;
         }}
     
-        /* Style the buttons to pop against the darker background */
+        /* 2. Global Text Color */
+        h1, h2, h3, p, span, label, .stMarkdown {{
+            color: white !important;
+        }}
+    
+        /* 3. ALL TEXT BOXES, DROPDOWNS, AND INPUTS */
+        /* Targets text inputs, number inputs, and text areas */
+        .stTextInput>div>div>input, 
+        .stSelectbox>div>div>div, 
+        .stTextArea>div>div>textarea,
+        .stNumberInput>div>div>input {{
+            background-color: black !important;
+            color: white !important;
+            border: 1px solid {current_style['accent']} !important;
+            border-radius: 5px;
+        }}
+    
+        /* Ensures the text inside the dropdown list itself is also white on black */
+        div[data-baseweb="select"] > div {{
+            background-color: black !important;
+            color: white !important;
+        }}
+    
+        /* 4. Button Styling */
         div.stButton > button {{
             background-color: {current_style['accent']};
             color: black;
+            font-weight: bold;
             border: none;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.5); /* 50% shadow on buttons */
         }}
         </style>
     """, unsafe_allow_html=True)

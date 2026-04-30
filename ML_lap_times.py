@@ -1,4 +1,5 @@
 # Here we create the Machine Learning part and train our models.
+import streamlit as st
 import pandas as pd
 import sqlite3
 import joblib
@@ -65,7 +66,7 @@ def train_dry_models(df_dry):
 
 
 
-
+@st.cache_data
 def predict_lap_time(track_name, team, compound, lap_number, air_temp):
     # Format the track name exactly how you saved it
     track_id = track_name.replace(' ', '_')

@@ -65,7 +65,7 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
     total_time += np.sum(predicted_lap_times)
     
     return total_time
-
+@st.cache_data
 def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
     # 1. Pre-calculate ALL possible lap times for BOTH tires up front (Only 156 predictions instead of 4,600!)
     time_on_start_tire = []
@@ -94,33 +94,4 @@ def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_comp
             
     return best_lap
 
-# ==========================================
-# Example usage:
-# ==========================================
-# ==========================================
-# Example usage: Master Strategy Report for All Teams
-# ==========================================
-#if __name__ == "__main__":
-#    # List of all the teams in your database
-#    all_teams = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
-#    track = 'Monaco Grand Prix'
-#    laps = 78
-#    
-#    print(f"🏁 MASTER STRATEGY REPORT: {track.upper()} 🏁\n")
-#    
-#    # Loop through every single team and calculate their unique optimal pit lap
-#    for team_name in all_teams:
-#        best_lap = find_optimal_pit_lap(
-#            track_name=track, 
-#            total_laps=laps, 
-#            team=team_name, 
-#            start_compound='SOFT', 
-#            next_compound='HARD', 
-#            air_temp=25.0, 
-#            pit_window_start=15, 
-#            pit_window_end=35
-#        )
-#        
-#        # Print a clear summary line for the team
-#        print(f"🏎️  {team_name.upper()} Optimal Strategy: Pit on Lap {best_lap}\n")
-#        print("-" * 50 + "\n")
+

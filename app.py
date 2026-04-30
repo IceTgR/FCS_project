@@ -9,7 +9,11 @@ from train_models import train_models
 from ui_team_selector import render_team_selector
 
 
+
+
+
 #main()
+st.set_page_config(layout="wide")
 
 # Track whether the simulation has been started in the current Streamlit session.
 if 'race_started' not in st.session_state: # to check if race has started, if not, initialize it to False

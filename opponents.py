@@ -1,6 +1,7 @@
 """Hilfsfunktionen für Gegner und deren Rennverhalten."""
 
 import random
+import streamlit as st
 
 from car import Car
 

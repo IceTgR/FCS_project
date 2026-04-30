@@ -130,7 +130,7 @@ else:
             st.rerun()
             
     with col_title:
-        st.write("### 🏁 The Race is On!")
+        st.markdown("<h3 style='text-align: center; margin-top: 0px;'>🏁 The Race is On!</h3>", unsafe_allow_html=True)
     
     st.divider()
 

@@ -67,31 +67,27 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
     return total_time
 
 def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
-    """
-    Simulates the entire race for every possible pit lap to find the 
-    mathematically fastest strategy using ML predictions.
-    """
+    # 1. Pre-calculate ALL possible lap times for BOTH tires up front (Only 156 predictions instead of 4,600!)
+    time_on_start_tire = []
+    time_on_target_tire = []
+    
+    for lap in range(1, total_laps + 1):
+        time_on_start_tire.append(predict_lap_time(track_name, team, start_compound, lap, air_temp))
+        time_on_target_tire.append(predict_lap_time(track_name, team, next_compound, lap, air_temp))
+        
     best_total_time = float('inf')
     best_lap = 0
 
-    # Test every possible lap as a potential pit stop lap (e.g., between lap 10 and the end)
+    # 2. Now just do basic math to find the best combination
     for pit_lap in range(10, total_laps - 5):
-        total_race_time = 0
-        current_compound = start_compound
+        # Slice the lists: Start tire from Lap 1 until the pit lap, then Target tire to the end
+        # (We use pit_lap - 1 because Python lists start at 0)
+        stint_1_time = sum(time_on_start_tire[:pit_lap - 1])
+        stint_2_time = sum(time_on_target_tire[pit_lap - 1:])
         
-        for lap in range(1, total_laps + 1):
-            # 1. Predict lap time based on the tire CURRENTLY on the car
-            # This uses the ML model to account for tire wear/degradation
-            lap_time = predict_lap_time(track_name, team, current_compound, lap, air_temp)
-            total_race_time += lap_time
-            
-            # 2. THE PIT STOP LOGIC:
-            # If we reach our 'test' pit lap, swap to the target tire and add pit loss
-            if lap == pit_lap:
-                current_compound = next_compound # This is your 'Target Pit Tire'
-                total_race_time += 22.0          # Estimated time lost in a pit stop (s)
-                
-        # 3. Compare this strategy to the best one found so far
+        # Total time is Stint 1 + Stint 2 + Pit Stop Time
+        total_race_time = stint_1_time + stint_2_time + 22.0
+        
         if total_race_time < best_total_time:
             best_total_time = total_race_time
             best_lap = pit_lap

@@ -114,19 +114,17 @@ if not st.session_state.race_started:
         # 4. Rerun to instantly switch to Page 2
         st.rerun()
 
+
 # ==========================================
 # 🚪 PAGE 2: THE SIMULATION (Race Screen)
 # ==========================================
 else: 
-    # Because of the 'else', NOTHING from Page 1 will render while this runs!
-    
     # Navigation header
     col_back, col_title = st.columns([1, 5]) 
     
     with col_back:
         if st.button("⬅️ Back"):
             st.session_state.race_started = False
-            # Clean up the car state when going back so it resets properly next time
             if 'player' in st.session_state:
                 del st.session_state['player']
             st.rerun()
@@ -136,34 +134,45 @@ else:
     
     st.divider()
 
-    # Make sure player exists before running logic (safety net)
     if 'player' in st.session_state:
+        
+        # --- NEW: LIVE AI STRATEGY DASHBOARD ---
+        st.markdown("#### 🧠 Live AI Strategy Advisor")
+        
+        # Create columns to put the dropdown next to the AI's recommendation
+        col_advisor_input, col_advisor_output = st.columns([1, 2])
+        
+        with col_advisor_input:
+            # The dropdown for the user to change their mind mid-race
+            live_target_tire = st.selectbox(
+                "Evaluate Pit Strategy for:", 
+                ['SOFT', 'MEDIUM', 'HARD'], 
+                key="live_target_tire"
+            )
+            
+        with col_advisor_output:
+            # The AI instantly calculates the best lap for whatever is in the dropdown!
+            try:
+                # We add a slight visual padding to align it with the dropdown box
+                st.write("") 
+                best_lap = find_optimal_pit_lap(
+                    track_name=st.session_state.track,
+                    total_laps=st.session_state.total_laps,
+                    team=st.session_state.player.team,
+                    start_compound=st.session_state.player.tire,
+                    next_compound=live_target_tire,
+                    air_temp=st.session_state.air_temp
+                )
+                # Display the live recommendation
+                st.success(f"**Target Window:** Box on **Lap {best_lap}** for fresh **{live_target_tire}** tires.")
+            except Exception as e:
+                st.warning("AI requires models to be trained to provide live data.")
+
+        st.divider()
+
+        # --- EXISTING RACE LOGIC ---
         write_chosen_options()
         race_simulation()
 
-        # Mid-race ML strategist
-        with st.expander("🏁 Mid-Race ML Strategist", expanded=False):
-            st.write("Run the AI during the race to re-evaluate an optimal pit lap based on current state.")
-            next_compound = st.selectbox("Choose next compound (if pitting):", ['SOFT','MEDIUM','HARD'], key='mid_next_compound')
-            
-            if st.button("Ask AI (mid-race)"):
-                with st.spinner("Simulating race times for strategy..."):
-                    try:
-                        best_lap = find_optimal_pit_lap(
-                            track_name=st.session_state.track,
-                            total_laps=st.session_state.total_laps,
-                            team=st.session_state.player.team,
-                            start_compound=st.session_state.player.tire,
-                            next_compound=next_compound,
-                            air_temp=st.session_state.air_temp,
-                            pit_window_start=st.session_state.player.lap + 1,
-                            pit_window_end=st.session_state.total_laps - 1,
-                        )
-                        st.success(f"**Optimal Strategy Found:** The AI recommends pitting on Lap {best_lap}!")
-                    except FileNotFoundError:
-                        st.error("Model not found! Make sure models are trained before running the strategist.")
-                    except Exception as e:
-                        st.error(f"An error occurred running the strategist: {e}")
     else:
-        # Fallback if something went wrong
         st.error("Car data failed to load. Please go back to the main menu and try again.")

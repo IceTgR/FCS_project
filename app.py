@@ -32,6 +32,27 @@ if not st.session_state.race_started:
 
    # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
     train_models() 
+    # --- TRACK AND TIRE SELECTION (Inside the 'if not race_started' block) ---
+    st.write("### 🛠️ Race Parameters")
+    col_track, col_start_tire, col_target_tire = st.columns(3)
+    
+    with col_track:
+        st.session_state.track = st.selectbox('Select the track:', 
+                                             ['Monaco Grand Prix', 'British Grand Prix'])
+    
+    with col_start_tire:
+        # Key 'start_tire' ensures this value is saved in session state
+        tire_start = st.radio('Starting Tire:', ['SOFT', 'MEDIUM', 'HARD'], key="start_tire")
+    
+    with col_target_tire:
+        # This is the tire the AI will calculate for the second stint
+        target_tire = st.radio('Target Pit Tire:', ['SOFT', 'MEDIUM', 'HARD'], index=2, key="target_tire")
+    
+    # When the Start Button is clicked, save these to the session state
+    if st.button('Start the simulation', use_container_width=True):
+        st.session_state.race_started = True
+        st.session_state.target_tire = target_tire # Save for the AI function
+        # ... rest of your car initialization logic ...
 
     # User input for driver, track, and starting tire, which is needed to start the simulation
     col1, col2, col3 = st.columns(3)

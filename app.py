@@ -8,13 +8,7 @@ from opponents import create_opponents
 # from InterfaceDM import main
 from train_models import train_models
 
-team_branding = {
-    'Ferrari': {'bg': '#EF1A2D', 'text': 'white', 'accent': '#FFFFFF'},
-    'Mercedes': {'bg': '#00A19B', 'text': 'white', 'accent': '#000000'},
-    'Red Bull': {'bg': '#0600EF', 'text': 'white', 'accent': '#FFD800'},
-    'McLaren': {'bg': '#FF8700', 'text': 'black', 'accent': '#000000'},
-    'Williams': {'bg': '#005AFF', 'text': 'white', 'accent': '#FFFFFF'}
-}
+
 #main()
 
 # Track whether the simulation has been started in the current Streamlit session.
@@ -32,40 +26,47 @@ TRACK_TEMP_RANGES = {
 # Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
     # Initialize session state for the selected team if it doesn't exist
-if 'selected_team' not in st.session_state:
-    st.session_state.selected_team = 'Ferrari'
+    team_branding = {
+    'Ferrari': {'bg': '#EF1A2D', 'text': 'white', 'accent': '#FFFFFF'},
+    'Mercedes': {'bg': '#00A19B', 'text': 'white', 'accent': '#000000'},
+    'Red Bull': {'bg': '#0600EF', 'text': 'white', 'accent': '#FFD800'},
+    'McLaren': {'bg': '#FF8700', 'text': 'black', 'accent': '#000000'},
+    'Williams': {'bg': '#005AFF', 'text': 'white', 'accent': '#FFFFFF'}
+}
+    if 'selected_team' not in st.session_state:
+        st.session_state.selected_team = 'Ferrari'
+    
+    # --- THEME INJECTION ---
+    current_style = team_branding[st.session_state.selected_team]
+    st.markdown(f"""
+        <style>
+        /* Change the main app background */
+        .stApp {{
+            background-color: {current_style['bg']};
+            transition: background-color 0.5s ease;
+        }}
+        /* Ensure all text tags are readable against the team color */
+        h1, h2, h3, p, span, label, .stMarkdown {{
+            color: {current_style['text']} !important;
+        }}
+        /* Style the standard Streamlit buttons */
+        div.stButton > button {{
+            background-color: {current_style['accent']};
+            color: {current_style['bg']};
+            border-radius: 10px;
+            font-weight: bold;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
 
-# --- THEME INJECTION ---
-current_style = team_branding[st.session_state.selected_team]
-st.markdown(f"""
-    <style>
-    /* Change the main app background */
-    .stApp {{
-        background-color: {current_style['bg']};
-        transition: background-color 0.5s ease;
-    }}
-    /* Ensure all text tags are readable against the team color */
-    h1, h2, h3, p, span, label, .stMarkdown {{
-        color: {current_style['text']} !important;
-    }}
-    /* Style the standard Streamlit buttons */
-    div.stButton > button {{
-        background-color: {current_style['accent']};
-        color: {current_style['bg']};
-        border-radius: 10px;
-        font-weight: bold;
-    }}
-    </style>
-""", unsafe_allow_html=True)
-
-# --- TEAM SELECTION BUTTONS ---
-st.write("### 🏎️ Choose Your Constructor")
-cols = st.columns(5)
-for i, team in enumerate(team_branding.keys()):
-    with cols[i]:
-        if st.button(team, key=f"select_{team}", use_container_width=True):
-            st.session_state.selected_team = team
-            st.rerun() # Forces the CSS to refresh immediately
+    # --- TEAM SELECTION BUTTONS ---
+    st.write("### 🏎️ Choose Your Constructor")
+    cols = st.columns(5)
+    for i, team in enumerate(team_branding.keys()):
+        with cols[i]:
+            if st.button(team, key=f"select_{team}", use_container_width=True):
+                st.session_state.selected_team = team
+                st.rerun() # Forces the CSS to refresh immediately
 
 # Update the player variable for the rest of your script
 team_player = st.session_state.selected_team

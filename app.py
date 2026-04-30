@@ -25,59 +25,9 @@ TRACK_TEMP_RANGES = {
 
 # Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
-    # Initialize session state for the selected team if it doesn't exist
-    team_branding = {
-    'Ferrari': {'bg': '#EF1A2D', 'text': 'white', 'accent': '#FFFFFF'},
-    'Mercedes': {'bg': '#00A19B', 'text': 'white', 'accent': '#000000'},
-    'Red Bull': {'bg': '#0600EF', 'text': 'white', 'accent': '#FFD800'},
-    'McLaren': {'bg': '#FF8700', 'text': 'black', 'accent': '#000000'},
-    'Williams': {'bg': '#005AFF', 'text': 'white', 'accent': '#FFFFFF'}
-}
-    if 'selected_team' not in st.session_state:
-        st.session_state.selected_team = 'Ferrari'
-    
-       # --- THEME INJECTION ---
-    current_style = team_branding[st.session_state.selected_team]
-    st.markdown(f"""
-        <style>
-        /* 1. Main Background with 50% shading */
-        .stApp {{
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), {current_style['bg']};
-            transition: background-color 0.5s ease;
-        }}
-    
-        /* 2. Global Text Color */
-        h1, h2, h3, p, span, label, .stMarkdown {{
-            color: white !important;
-        }}
-    
-        /* 3. ALL TEXT BOXES, DROPDOWNS, AND INPUTS */
-        /* Targets text inputs, number inputs, and text areas */
-        .stTextInput>div>div>input, 
-        .stSelectbox>div>div>div, 
-        .stTextArea>div>div>textarea,
-        .stNumberInput>div>div>input {{
-            background-color: black !important;
-            color: white !important;
-            border: 1px solid {current_style['accent']} !important;
-            border-radius: 5px;
-        }}
-    
-        /* Ensures the text inside the dropdown list itself is also white on black */
-        div[data-baseweb="select"] > div {{
-            background-color: black !important;
-            color: white !important;
-        }}
-    
-        /* 4. Button Styling */
-        div.stButton > button {{
-            background-color: {current_style['accent']};
-            color: black;
-            font-weight: bold;
-            border: none;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
+       st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
+         f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
+         f'guide your driver to victory!')
 
     # --- TEAM SELECTION BUTTONS ---
     st.write("### 🏎️ Choose Your Constructor")

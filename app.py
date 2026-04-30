@@ -5,8 +5,8 @@ import os
 from racelogic import write_chosen_options, race_simulation
 from car import Car
 from opponents import create_opponents
-# from InterfaceDM import main
 from train_models import train_models
+from ui_components import render_team_selector
 
 
 #main()
@@ -26,13 +26,15 @@ TRACK_TEMP_RANGES = {
 
 # Start screen: show intro and collect race setup options.
 if not st.session_state.race_started:
-    st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
-         f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
-         f'guide your driver to victory!')
-
-   # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
+    st.write('You are now in the seat of the F1 race strategist!')
+    
     train_models() 
-    # --- TRACK AND TIRE SELECTION (Inside the 'if not race_started' block) ---
+
+    # --- TEAM SELECTION ---
+    # Call your new function. It will draw the UI and give you the chosen team!
+    team_player = render_team_selector() 
+
+    # --- TRACK AND TIRE SELECTION ---
     st.write("### 🛠️ Race Parameters")
     col_track, col_start_tire, col_target_tire = st.columns(3)
     

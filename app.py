@@ -29,20 +29,7 @@ if not st.session_state.race_started:
          f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
          f'guide your driver to victory!')
 
-# --- TEAM SELECTION BUTTONS ---
-st.write("### 🏎️ Choose Your Constructor")
-cols = st.columns(5)
-for i, team in enumerate(team_branding.keys()):
-    with cols[i]:
-        if st.button(team, key=f"select_{team}", use_container_width=True):
-            st.session_state.selected_team = team
-            st.rerun() # Forces the CSS to refresh immediately
 
-    # Update the player variable for the rest of your script
-    team_player = st.session_state.selected_team
-    st.write(f'You are now in the seat of the F1 race strategist for Ferrari!\n'
-         f'Prepare yourself to make crucial decisions on pit stops, tire choices, and '
-         f'guide your driver to victory!')
     
    # Modul zum Daten laden und Modell trainieren, falls noch nicht vorhanden
     train_models() 

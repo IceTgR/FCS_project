@@ -120,7 +120,7 @@ if not st.session_state.race_started:
 # ==========================================
 else: 
     # Navigation header
-    col_back, col_title = st.columns([1, 5]) 
+    col_back, col_title, col_empty = st.columns([1, 4, 1])
     
     with col_back:
         if st.button("⬅️ Back"):

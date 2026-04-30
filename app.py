@@ -6,7 +6,7 @@ from racelogic import write_chosen_options, race_simulation
 from car import Car
 from opponents import create_opponents
 from train_models import train_models
-from UI_Team selector import render_team_selector
+from ui_team_selector import render_team_selector
 
 
 #main()

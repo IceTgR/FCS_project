@@ -1,3 +1,10 @@
+"""
+InterfaceDM.py — Full-featured F1 Race Strategy Simulator interface.
+
+Handles lap time calculation, tire degradation, weather effects,
+pit stop strategy, interactive charts, and CSV export via Streamlit.
+"""
+
 import streamlit as st
 import plotly.graph_objects as go
 import random
@@ -8,6 +15,7 @@ st.set_page_config(page_title="F1 Race Strategy Simulator", layout="wide", initi
 
 # ── CONSTANTS ─────────────────────────────────────────────────────────────────
 
+# Constructor names mapped to their official hex brand color
 TEAMS = {
     "Ferrari":  "#DC0000",
     "Red Bull": "#3671C6",
@@ -16,6 +24,7 @@ TEAMS = {
     "Williams": "#005AFF",
 }
 
+# Each track stores the base lap time (seconds) and total race laps
 TRACKS = {
     "Monaco":      {"base_time": 75,  "laps": 78},
     "Monza":       {"base_time": 81,  "laps": 53},
@@ -26,27 +35,46 @@ TRACKS = {
     "Melbourne":   {"base_time": 80,  "laps": 58},
 }
 
+# Seconds added/subtracted from the base lap time per team (performance delta)
 TEAM_DELTA = {
     "Ferrari": -0.1, "Red Bull": -0.3, "Mercedes": 0.0,
     "McLaren": -0.2, "Williams": 0.8,
 }
 
+# Each compound stores its display color, per-lap degradation rate,
+# and a lap-time offset relative to the base time
 COMPOUNDS = {
-    "SOFT":   {"color": "#E8001C", "deg": 2.5, "offset": -1.5},
-    "MEDIUM": {"color": "#FFF200", "deg": 1.5, "offset":  0.0},
-    "HARD":   {"color": "#CCCCCC", "deg": 0.8, "offset":  1.0},
+    "SOFT":   {"color": "#E8001C", "deg": 2.5, "offset": -1.5},  # fastest, wears quickest
+    "MEDIUM": {"color": "#FFF200", "deg": 1.5, "offset":  0.0},  # balanced
+    "HARD":   {"color": "#CCCCCC", "deg": 0.8, "offset":  1.0},  # slowest, most durable
 }
 
 # ── STATE ─────────────────────────────────────────────────────────────────────
 
 def init_state():
+    """Seed st.session_state with default values on first load.
+
+    Only sets keys that are not already present, so existing race
+    progress is preserved across Streamlit reruns.
+    """
     defs = dict(
-        phase="setup", team="Ferrari", track="Monaco",
-        compound="SOFT", weather="Clear",
-        lap=1, lap_times=[], tire_life=100.0,
-        stints=[], pit_times=[], pit_count=0,
-        pit_compound=None, message="",
-        temp=25, humidity=45, wind=12, last_session=None,
+        phase="setup",       # "setup" | "racing" | "finished"
+        team="Ferrari",
+        track="Monaco",
+        compound="SOFT",
+        weather="Clear",     # "Clear" | "Wet"
+        lap=1,
+        lap_times=[],        # recorded lap time for each completed lap
+        tire_life=100.0,     # percentage of tyre remaining (0–100)
+        stints=[],           # list of {"compound", "start_lap", "end_lap"} dicts
+        pit_times=[],        # pit-stop durations in seconds
+        pit_count=0,
+        pit_compound=None,   # compound selected for the next pit stop
+        message="",          # transient status message shown after pit
+        temp=25,             # air temperature in °C
+        humidity=45,
+        wind=12,             # wind speed in km/h
+        last_session=None,   # summary dict from the most recently finished race
     )
     for k, v in defs.items():
         if k not in st.session_state:
@@ -55,36 +83,72 @@ def init_state():
 # ── SIMULATION ────────────────────────────────────────────────────────────────
 
 def calc_lap_time():
+    """Return a simulated lap time (seconds) for the current state.
+
+    Formula:
+        base_time                      — circuit constant
+        + compound offset              — tyre speed advantage/penalty
+        + team delta                   — constructor performance gap
+        + degradation penalty          — increases as tyre_life drops toward 0
+        + wet penalty (if applicable)  — 4–10 s random addition
+        + random variance              — ±0.4 s natural lap-to-lap variation
+    """
     s = st.session_state
     return round(
         TRACKS[s.track]["base_time"]
         + COMPOUNDS[s.compound]["offset"]
         + TEAM_DELTA.get(s.team, 0.0)
-        + (1 - s.tire_life / 100) * 6
+        + (1 - s.tire_life / 100) * 6          # max +6 s when tyres are fully worn
         + (random.uniform(4, 10) if s.weather == "Wet" else 0)
         + random.uniform(-0.4, 0.4),
         2,
     )
 
+
 def degrade_tires():
+    """Reduce tyre life by one lap's worth of wear, with ±15 % randomness."""
     s = st.session_state
     s.tire_life = max(0.0, round(
         s.tire_life - COMPOUNDS[s.compound]["deg"] * random.uniform(0.85, 1.15), 1
     ))
 
+
 def get_pit_window():
+    """Calculate the recommended pit-stop window (two lap numbers).
+
+    Estimates how many more laps the current tyre can run before
+    dropping below 20 % life, then returns that lap and the one
+    five laps later as the outer edge of the window.
+
+    Returns:
+        (window_start, window_end) — both clamped to the race distance.
+    """
     s = st.session_state
+    # Laps left before tyre drops under the 20 % threshold
     n = max(0, int((s.tire_life - 20) / COMPOUNDS[s.compound]["deg"]))
     ws = min(s.lap + n, TRACKS[s.track]["laps"] - 1)
     return ws, min(ws + 5, TRACKS[s.track]["laps"] - 1)
 
+
 def do_lap(pit: bool):
+    """Advance the race by one lap, optionally performing a pit stop first.
+
+    If pitting:
+      - Closes the current stint and opens a new one.
+      - Resets tyre life to 100 % on the chosen compound.
+      - Adds a random pit-stop duration (2.0–4.5 s) to pit_times.
+
+    After the optional pit stop:
+      - Records the lap time and degrades tyres.
+      - Increments the lap counter.
+      - Transitions phase to "finished" when the final lap is completed.
+    """
     s = st.session_state
     if pit:
         dur = round(random.uniform(2.0, 4.5), 2)
         if s.stints:
-            s.stints[-1]["end_lap"] = s.lap - 1
-        cmp = s.pit_compound or s.compound
+            s.stints[-1]["end_lap"] = s.lap - 1     # close out the stint we just ended
+        cmp = s.pit_compound or s.compound           # fall back to current if none chosen
         s.stints.append({"compound": cmp, "start_lap": s.lap, "end_lap": None})
         s.compound, s.tire_life = cmp, 100.0
         s.pit_count += 1
@@ -93,20 +157,29 @@ def do_lap(pit: bool):
         s.message = f"Pit stop: {dur:.2f}s — Now on {cmp} tires."
     else:
         s.message = ""
+
     s.lap_times.append(calc_lap_time())
     degrade_tires()
     s.lap += 1
+
     if s.lap > TRACKS[s.track]["laps"]:
         if s.stints:
             s.stints[-1]["end_lap"] = s.lap - 1
         s.phase = "finished"
+        # Persist a minimal summary for the "Last Session" card
         s.last_session = dict(
             team=s.team, track=s.track,
             compound=s.stints[0]["compound"] if s.stints else s.compound,
             best_lap=min(s.lap_times), laps=len(s.lap_times),
         )
 
+
 def start_race():
+    """Reset all in-race state and transition from setup to racing.
+
+    Randomises weather-dependent environmental conditions so that
+    wet races feel genuinely different from dry ones.
+    """
     s = st.session_state
     wet = s.weather == "Wet"
     s.temp     = random.randint(12, 22) if wet else random.randint(20, 35)
@@ -120,6 +193,8 @@ def start_race():
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 
+# Dark F1-themed stylesheet injected via st.markdown.
+# Uses Orbitron (display/numbers) and Rajdhani (body) from Google Fonts.
 CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600&display=swap');
@@ -282,6 +357,12 @@ button[data-testid="baseButton-secondary"]:hover {
 # ── PANELS ────────────────────────────────────────────────────────────────────
 
 def hero_panel():
+    """Render the top-left branding panel.
+
+    Shows the simulator title and tagline. Displays a START button
+    during setup, and a summary card of the most recently finished
+    race session if one exists.
+    """
     s = st.session_state
     st.markdown('<div class="panel">', unsafe_allow_html=True)
     st.markdown('<div class="panel-hdr"><span>◀</span> F1 RACE STRATEGY SIMULATOR</div>', unsafe_allow_html=True)
@@ -292,11 +373,13 @@ def hero_panel():
     <div class="hero-sub">Make the right calls. Beat the competition.<br>Lead your team to victory!</div>
     """, unsafe_allow_html=True)
 
+    # Only show the start button when no race is in progress
     if s.phase == "setup":
         if st.button("▶  START SIMULATION", key="hero_start", use_container_width=True, type="primary"):
             start_race()
             st.rerun()
 
+    # Last-session summary card — shown after at least one race is completed
     if s.last_session:
         ls = s.last_session
         tc = TEAMS.get(ls["team"], "#ff0000")
@@ -329,12 +412,23 @@ def hero_panel():
 
 
 def setup_panel():
+    """Render the pre-race configuration panel (right column).
+
+    Lets the player choose:
+      - Weather condition (Clear / Wet) — affects lap times and conditions
+      - Constructor (team) — applies the team performance delta
+      - Starting tyre compound — sets initial degradation rate and speed offset
+      - Track — determines base lap time and total race laps
+
+    Pressing START fires start_race() and transitions to the racing phase.
+    """
     s = st.session_state
     st.markdown('<div class="panel">', unsafe_allow_html=True)
 
     weather_icon = "☀️ Clear" if s.weather == "Clear" else "🌧️ Wet"
     st.markdown(f'<div class="panel-hdr"><span>◀</span> START NEW SIMULATION <span style="float:right;color:#4a88cc;">Weather: {weather_icon}</span></div>', unsafe_allow_html=True)
 
+    # Weather toggle — two mutually exclusive buttons
     weather_cols = st.columns(2)
     with weather_cols[0]:
         if st.button("☀️  Clear", key="w_clear", use_container_width=True,
@@ -350,6 +444,7 @@ def setup_panel():
     with team_col:
         st.markdown('<div class="section-lbl">SELECT TEAM</div>', unsafe_allow_html=True)
         team_list = list(TEAMS.keys())
+        # Render teams in a 2-column grid; selected team gets a colored glow border
         for i in range(0, len(team_list), 2):
             row = team_list[i:i+2]
             cols = st.columns(len(row))
@@ -374,6 +469,7 @@ def setup_panel():
 
     with tire_col:
         st.markdown('<div class="section-lbl">STARTING TIRE</div>', unsafe_allow_html=True)
+        # Each compound rendered as a coloured dot card; selected one gets a glow border
         for cmp in ["SOFT", "MEDIUM", "HARD"]:
             cc  = COMPOUNDS[cmp]["color"]
             sel = s.compound == cmp
@@ -407,6 +503,18 @@ def setup_panel():
 
 
 def race_panel():
+    """Render the live race control panel (left column, below hero).
+
+    During racing phase shows:
+      - Current lap counter and team/compound info
+      - Tyre wear bars for all three compounds (active compound is live; others show 100 %)
+      - Recommended pit window derived from get_pit_window()
+      - Compound selector for the upcoming pit stop
+      - NEXT LAP and PIT NOW action buttons
+
+    During finished phase shows only a NEW RACE reset button.
+    Always shows a weather strip at the bottom.
+    """
     s = st.session_state
     st.markdown('<div class="panel">', unsafe_allow_html=True)
     st.markdown('<div class="panel-hdr"><span>◀</span> RACE IN PROGRESS</div>', unsafe_allow_html=True)
@@ -420,10 +528,11 @@ def race_panel():
     times  = s.lap_times
     best   = min(times) if times else 0.0
     last   = times[-1]  if times else 0.0
-    cur_lap = min(s.lap - 1, total)
+    cur_lap = min(s.lap - 1, total)   # lap - 1 because s.lap is the *next* lap to run
     tc  = TEAMS.get(s.team, "#ff0000")
     cc  = COMPOUNDS[s.compound]["color"]
 
+    # Lap counter (left) and best/last lap times (right)
     r1, r2 = st.columns([1, 2], gap="small")
     with r1:
         st.markdown(f"""
@@ -449,6 +558,7 @@ def race_panel():
         </div>
         """, unsafe_allow_html=True)
 
+    # Tyre wear bars — colour shifts green → amber → red as life drops
     st.markdown('<div class="section-lbl">TYRE WEAR</div>', unsafe_allow_html=True)
     for cmp, cfg in COMPOUNDS.items():
         remaining = s.tire_life if cmp == s.compound else 100.0
@@ -489,6 +599,7 @@ def race_panel():
         </div>
         """, unsafe_allow_html=True)
 
+        # Compound selector for the next pit stop; toggled by clicking a compound button
         st.markdown('<div class="section-lbl">PIT ONTO:</div>', unsafe_allow_html=True)
         pc1, pc2, pc3 = st.columns(3)
         for pcol, cmp in [(pc1, "SOFT"), (pc2, "MEDIUM"), (pc3, "HARD")]:
@@ -503,6 +614,7 @@ def race_panel():
                     <div style="color:#aaa;font-size:0.48rem;font-family:'Orbitron',monospace;">{cmp}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                # Clicking an already-selected compound deselects it (toggle behaviour)
                 if st.button("✓" if csel else cmp[0], key=f"pit_cmp_{cmp}", use_container_width=True,
                              type="primary" if csel else "secondary"):
                     s.pit_compound = None if csel else cmp
@@ -520,6 +632,7 @@ def race_panel():
             st.markdown(f'<div style="color:#88ffaa;font-size:0.68rem;margin-top:6px;text-align:center;">{s.message}</div>', unsafe_allow_html=True)
 
     elif s.phase == "finished":
+        # Race over — clear in-race keys so setup_panel shows fresh defaults next time
         if st.button("▶  NEW RACE", key="new_race_btn", use_container_width=True, type="primary"):
             for k in ["phase","lap","lap_times","tire_life","stints","pit_times",
                       "pit_count","pit_compound","message"]:
@@ -527,6 +640,7 @@ def race_panel():
                     del st.session_state[k]
             st.rerun()
 
+    # Weather strip always visible at the bottom of the race panel
     icon = "☀️" if s.weather == "Clear" else "🌧️"
     st.markdown(f"""
     <div class="weather-strip">
@@ -541,6 +655,17 @@ def race_panel():
 
 
 def results_panel():
+    """Render the race results panel (right column, below setup).
+
+    Displays (once lap_times is populated):
+      - Best lap time card with team colour dot
+      - Plotly line chart of lap-by-lap times (hidden if only one lap)
+      - Summary stats: total race time, average lap, pit stop count, fastest pit
+      - Strategy bar: colour-coded stints proportional to their lap share,
+        with lap-number markers below
+
+    Also provides an EXPORT CSV download button for the lap time data.
+    """
     s = st.session_state
     times = s.lap_times
 
@@ -565,6 +690,7 @@ def results_panel():
     best  = min(times)
     avg   = sum(times) / len(times)
     total = sum(times)
+    # Format total race time as H:MM:SS.mmm (drop hours if under 60 min)
     h, rem = divmod(total, 3600)
     m, sec = divmod(rem, 60)
     total_str = f"{int(h)}:{int(m):02d}:{sec:06.3f}" if h else f"{int(m)}:{sec:06.3f}"
@@ -582,6 +708,7 @@ def results_panel():
     </div>
     """, unsafe_allow_html=True)
 
+    # Lap time chart — only rendered when there are at least two data points
     if len(times) > 1:
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -609,6 +736,7 @@ def results_panel():
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
+    # Four headline stats in a single row
     c1, c2, c3, c4 = st.columns(4)
     for col, lbl, val in [
         (c1, "TOTAL RACE TIME", total_str),
@@ -624,6 +752,8 @@ def results_panel():
             </div>
             """, unsafe_allow_html=True)
 
+    # Strategy bar -> each stint becomes a coloured segment whose width is
+    # proportional to the fraction of total laps it covers
     if s.stints:
         st.markdown('<div class="section-lbl" style="margin-top:14px;">STRATEGY OVERVIEW</div>', unsafe_allow_html=True)
         total_laps = TRACKS[s.track]["laps"]
@@ -634,11 +764,12 @@ def results_panel():
             laps  = max(1, end - start + 1)
             pct   = round(laps / total_laps * 100, 1)
             cc    = COMPOUNDS[stint["compound"]]["color"]
-            letter = stint["compound"][0]
+            letter = stint["compound"][0]          # S / M / H label inside the bar
             segs.append(
                 f'<div class="strategy-seg" style="flex:{pct};background:{cc};">'
                 f'{letter}</div>'
             )
+        # Lap-number markers are positioned absolutely below each stint start
         lap_markers = []
         for stint in s.stints:
             pct = round((stint["start_lap"] - 1) / total_laps * 100, 1)
@@ -658,6 +789,11 @@ def results_panel():
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
+    """Entry point — initialise state, inject CSS, and render the two-column layout.
+
+    Left column (2/5 width):  hero_panel  →  race_panel
+    Right column (3/5 width): setup_panel →  results_panel
+    """
     init_state()
     st.markdown(CSS, unsafe_allow_html=True)
 

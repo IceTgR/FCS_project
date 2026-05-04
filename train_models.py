@@ -7,11 +7,6 @@ from ML_lap_times import train_dry_models
 from retrieve_data import fastf1_to_sql
 
 def train_models():
-    with st.expander("🤖 Train ML Models"):
-        st.write("""Train and save ML models for lap time prediction.
-                 You need to do this the first time you run the app, or if you want to retrain the models.""")
-        
-        # Check if models exist
         models_exist = (
             os.path.exists('models/dry/rf_Monaco_Grand_Prix.pkl') and
             os.path.exists('models/dry/rf_British_Grand_Prix.pkl')
@@ -34,7 +29,7 @@ def train_models():
                         team_list = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
                         fastf1_to_sql(years, track_list, team_list)
                     st.success("✅ Database created successfully!")
-                
+                st.rerun()
                 # Step 2: Load and preprocess data
                 with st.spinner('Loading data...'):
                     df_dry, df_wet = get_preprocessed_datasets()

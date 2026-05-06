@@ -176,9 +176,9 @@ def race_simulation():
     st.subheader('Renngeschichte')
     history = pd.DataFrame(st.session_state.player.race_history, columns=['Runde', 'Rundenzeit', 'Reifen', 'Reifenalter', 'Kommentar'])
 
-    st.metric('Rundenzeit-Entwicklung', (f"{st.session_state.player.race_history[-1]['Lap Time']:.2f} Sekunden" if st.session_state.player.lap > 1 else 0),
-            delta = ((st.session_state.player.race_history[-1]['Lap Time'] - st.session_state.player.race_history[-2]['Lap Time']) if st.session_state.player.lap > 2 else 'k.A.'),
-            chart_data = history['Lap Time'], chart_type = 'line', border = True, delta_color = 'inverse')
+    st.metric('Rundenzeit-Entwicklung', (f"{st.session_state.player.race_history[-1]['Rundenzeit']:.2f} Sekunden" if st.session_state.player.lap > 1 else 0),
+            delta = ((st.session_state.player.race_history[-1]['Rundenzeit'] - st.session_state.player.race_history[-2]['Rundenzeit']) if st.session_state.player.lap > 2 else 'k.A.'),
+            chart_data = history['Rundenzeit'], chart_type = 'line', border = True, delta_color = 'inverse')
     
     st.table(history) if st.session_state.player.lap > 1 else st.write('Keine Historie vorhanden, das ist deine erste Runde!')
 

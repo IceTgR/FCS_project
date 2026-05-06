@@ -156,7 +156,7 @@ class Car:
         self.total_time += self.lap_time
         # Bestimme Rundentyp: Auslauf nach Boxenstopp oder Normal
         lap_type = 'Auslauf' if self._outlap_comment_pending else 'Normal'
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Kommentar': self._race_comment(lap_type, safety_event_status)})
+        self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': self.tire, 'Reifenalter': self.tire_age, 'Kommentar': self._race_comment(lap_type, safety_event_status)})
         if self._outlap_comment_pending:
             self._outlap_comment_pending = False
         self.lap += 1
@@ -186,7 +186,7 @@ class Car:
         self.total_time += self.lap_time
         
         # Speichere Einlauf-Runde mit alten Reifen-Daten
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Kommentar': self._race_comment('Einlauf', safety_event_status)})
+        self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': old_tire, 'Reifenalter': old_tire_age, 'Kommentar': self._race_comment('Einlauf', safety_event_status)})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

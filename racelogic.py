@@ -4,6 +4,7 @@ import time
 
 import streamlit as st
 import pandas as pd
+import streamlit.components.v1 as components
 from car import Car
 from opponents import advance_opponents, build_opponent_table
 
@@ -100,17 +101,20 @@ def race_simulation():
         # Berechne Rundenzeit vor Spieler-Aktion.
         air_temp = st.session_state.get('air_temp', 25)
         st.session_state.player.predict_lap_time(air_temp=air_temp)
-        
-        # Initialisiere lap_start_time wenn Runde gerade begonnen hat.
-        if 'lap_start_time' not in st.session_state:
+
+        # Initialisiere oder aktualisiere den Startzeitpunkt für die aktuelle Runde.
+        current_lap = st.session_state.player.lap
+        if st.session_state.get('lap_started_for') != current_lap:
             st.session_state.lap_start_time = time.time()
-        
+            st.session_state.lap_started_for = current_lap
+
         # Berechne verstrichene Zeit seit Rundenstart in Sekunden.
         elapsed_time = time.time() - st.session_state.lap_start_time
         timeout_seconds = 5.0
-        
+        remaining_time = max(0.0, timeout_seconds - elapsed_time)
+
         # Auto-Weitermachen nach 5 Sekunden ohne Spieler-Input.
-        if elapsed_time > timeout_seconds:
+        if remaining_time <= 0:
             roll_safety_event()
             apply_safety_event_effect(st.session_state.player)
             st.session_state.player.advance_lap(st.session_state.safety_event_status)
@@ -123,17 +127,40 @@ def race_simulation():
                     get_safety_event_pitstop_multiplier(),
                 )
             resolve_safety_event()
-            st.session_state.lap_start_time = time.time()  # Setze für nächste Runde zurück.
+            st.session_state.lap_start_time = time.time()
+            st.session_state.lap_started_for = st.session_state.player.lap
             st.rerun()
-        else:
 
-
-            # Zeige verbleibende Zeit für automatischen Fortschritt an.
-            remaining_time = timeout_seconds - elapsed_time
-            st.info(f'⏱️ Automatisch nächste Runde in {remaining_time:.1f} Sekunden... (oder wähle unten manuell)')
-            
-            # Weiter ohne Boxenstopp.
-            if st.button('Nächste Runde'):
+        # Rendern Countdown und Browser-Refresh direkt im Client, damit die Zeit sichtbar weiterläuft.
+        components.html(
+            f"""
+            <div id=\"fcs-countdown\" style=\"font-family:sans-serif;font-size:1rem;padding:0.25rem 0;\">
+                ⏱️ Automatisch nächste Runde in <strong><span id=\"fcs-countdown-value\">{remaining_time:.1f}</span></strong> Sekunden... (oder wähle unten manuell)
+            </div>
+            <script>
+            (() => {{
+                const endTime = Date.now() + {int(remaining_time * 1000)};
+                const valueEl = document.getElementById('fcs-countdown-value');
+                const tick = () => {{
+                    const secondsLeft = Math.max(0, (endTime - Date.now()) / 1000);
+                    valueEl.textContent = secondsLeft.toFixed(1);
+                    if (secondsLeft <= 0) {{
+                        clearInterval(timerId);
+                        window.parent.location.reload();
+                    }}
+                }};
+                const timerId = window.setInterval(tick, 100);
+                tick();
+            }})();
+            </script>
+            """,
+            height=48,
+        )
+        
+        # Weiter ohne Boxenstopp.
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button('Nächste Runde', key='continue_btn'):
                 roll_safety_event()
                 apply_safety_event_effect(st.session_state.player)
                 st.session_state.player.advance_lap(st.session_state.safety_event_status)
@@ -147,12 +174,14 @@ def race_simulation():
                     )
                 resolve_safety_event()
                 st.session_state.lap_start_time = time.time()  # Reset für nächste Runde.
+                st.session_state.lap_started_for = st.session_state.player.lap
                 st.rerun(scope = 'app')
-
-            # Lasse Spieler nächste Reifenmischung für Boxenstopp wählen.
-            new_tire = st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'])
-            # Fahre in die Boxengasse und wechsle Reifen.
-            if st.button('Boxenstopp'):
+        
+        with col2:
+            if st.button('Boxenstopp', key='pit_btn'):
+                # Lasse Spieler nächste Reifenmischung für Boxenstopp wählen.
+                new_tire = st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'])
+                # Fahre in die Boxengasse und wechsle Reifen.
                 roll_safety_event()
                 apply_safety_event_effect(st.session_state.player)
                 st.session_state.player.box(
@@ -170,6 +199,7 @@ def race_simulation():
                     )
                 resolve_safety_event()
                 st.session_state.lap_start_time = time.time()  # Reset für nächste Runde.
+                st.session_state.lap_started_for = st.session_state.player.lap
                 st.rerun(scope = 'app')
 
     # Zeige Rennhistorie als Tabelle und Diagramm.

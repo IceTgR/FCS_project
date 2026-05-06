@@ -1,7 +1,7 @@
 import streamlit as st
 
 def render_team_selector():
-    st.write("### 🏎️ Select Your Team")
+    st.write("### 🏎️ Wähle dein Team")
     
     # F1 Team Hex Colors 
     team_colors = {
@@ -46,13 +46,13 @@ def render_team_selector():
             
             # 2. The selection button
             if st.session_state.team_player == team:
-                st.button("✅ Selected", key=f"btn_{team}", disabled=True, use_container_width=True)
+                st.button("✅ Ausgewählt", key=f"btn_{team}", disabled=True, use_container_width=True)
             else:
-                if st.button("Select", key=f"btn_{team}", use_container_width=True):
+                if st.button("Wählen", key=f"btn_{team}", use_container_width=True):
                     st.session_state.team_player = team
                     st.rerun() # Refresh immediately to show the checkmark
 
     st.markdown("---")
     
-    # Return the chosen team so app.py can use it
+    # Das gewählte Team zurückgeben, damit app.py es verwenden kann
     return st.session_state.team_player

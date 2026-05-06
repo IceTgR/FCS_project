@@ -4,6 +4,8 @@ InterfaceDM.py — Full-featured F1 Race Strategy Simulator interface.
 Handles lap time calculation, tire degradation, weather effects,
 pit stop strategy, interactive charts, and CSV export via Streamlit.
 """
+#DON'T USE THIS FILE DIRECTLY, IT'S JUST A TEMPLATE WITH OWN AI RACELOGIC (NOT LINKED WITH OUR OWN
+#RACELOGIC IN THE BACKEND). IT'S JUST LEFT HERE FOR INSPIRATION!
 
 import streamlit as st
 import plotly.graph_objects as go

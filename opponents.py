@@ -208,20 +208,20 @@ def build_opponent_table(opponents, total_laps):
     rows = []
     for opponent in opponents:
         # Die Tabelle soll den aktuellen Zustand der Gegner kompakt zeigen.
-        last_lap_time = opponent.car.race_history[-1]['Lap Time'] if opponent.car.race_history else 0.0
+        last_lap_time = opponent.car.race_history[-1]['Rundenzeit'] if opponent.car.race_history else 0.0
         rows.append(
             {
                 'Team': opponent.team,
-                'Start Tire': opponent.starting_tire,
-                'Current Lap': opponent.car.lap,
-                'Pit Stops': opponent.car.pitstop_counter,
-                'Last Lap Time': round(last_lap_time, 2),
-                'Tire': opponent.car.tire,
-                'Tire Age': opponent.car.tire_age,
-                'Planned Pit Lap': opponent.pit_lap,
-                'Target Tire': opponent.next_compound,
-                'Total Time': round(opponent.car.total_time, 2),
-                'Status': 'Finished' if opponent.car.lap > total_laps else 'Running',
+                'Start-Reifen': opponent.starting_tire,
+                'Aktuelle Runde': opponent.car.lap,
+                'Boxenstopps': opponent.car.pitstop_counter,
+                'Letzte Rundenzeit': round(last_lap_time, 2),
+                'Reifen': opponent.car.tire,
+                'Reifenalter': opponent.car.tire_age,
+                'Geplanter Boxenlap': opponent.pit_lap,
+                'Ziel-Reifenmischung': opponent.next_compound,
+                'Gesamtzeit': round(opponent.car.total_time, 2),
+                'Status': 'Beendet' if opponent.car.lap > total_laps else 'Läuft',
             }
         )
     return rows

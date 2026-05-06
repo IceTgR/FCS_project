@@ -119,24 +119,24 @@ class Car:
 
     @property
     def outlap_pending(self):
-        """Gibt zurück, ob eine Auslauf-Runde nach Boxenstopp ausstehend ist."""
+        """Gibt zurück, ob eine Outlap nach dem Boxenstopp aussteht."""
         return self._outlap_pending
     
     @outlap_pending.setter
     def outlap_pending(self, value):
-        """Setzt ausstehende Auslauf-Runde."""
+        """Setzt die ausstehende Outlap."""
         if not isinstance(value, bool):
             raise ValueError("outlap_pending must be a boolean value.")
         self._outlap_pending = value
 
     @property
     def outlap_comment_pending(self):
-        """Gibt zurück, ob Auslauf-Kommentar ausstehend ist."""
+        """Gibt zurück, ob ein Outlap-Kommentar aussteht."""
         return self._outlap_comment_pending
     
     @outlap_comment_pending.setter
     def outlap_comment_pending(self, value):
-        """Setzt ausstehenden Auslauf-Kommentar."""
+        """Setzt den ausstehenden Outlap-Kommentar."""
         self._outlap_comment_pending = value
 
     def _race_comment(self, lap_type, safety_event_status=None):
@@ -156,8 +156,8 @@ class Car:
     def advance_lap(self, safety_event_status=None):
         """Verarbeitet Auto zur nächsten Runde und aktualisiert Historie."""
         self.total_time += self.lap_time
-        # Bestimme Rundentyp: Auslauf nach Boxenstopp oder Normal
-        lap_type = 'Auslauf' if self._outlap_comment_pending else 'Normal'
+        # Bestimme Rundentyp: Outlap nach Boxenstopp oder Normal.
+        lap_type = 'Outlap' if self._outlap_comment_pending else 'Normal'
         self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': self.tire, 'Reifenalter': self.tire_age, 'Kommentar': self._race_comment(lap_type, safety_event_status)})
         if self._outlap_comment_pending:
             self._outlap_comment_pending = False
@@ -165,17 +165,17 @@ class Car:
         self.tire_age += 1
 
     def inlap_penalty(self):
-        """Gibt Zeitverlust des Einlauf-Boxenstopps in Sekunden zurück."""
+        """Gibt Zeitverlust der Inlap des Boxenstopps in Sekunden zurück."""
         pit_loss = random.uniform(19.5, 25.0)
         return pit_loss
 
     def outlap_penalty(self):
-        """Gibt Zeitverlust der Auslauf-Runde nach Boxenstopp zurück."""
+        """Gibt Zeitverlust der Outlap nach Boxenstopp zurück."""
         return random.uniform(0.6, 1.4)
 
     def box(self, new_tire, safety_event_status=None, pitstop_multiplier=1.0):
         """Führt Boxenstopp durch und wechselt Reifenmischung."""
-        # Boxenstopp-Zeit wird in der Einlauf-Rundenzeit addiert
+        # Boxenstopp-Zeit wird in der Inlap-Rundenzeit addiert.
         self.lap_time += self.inlap_penalty() * pitstop_multiplier
         
         # Speichere alte Reifen-Daten vor dem Wechsel
@@ -187,8 +187,8 @@ class Car:
         self.tire_age = 0
         self.total_time += self.lap_time
         
-        # Speichere Einlauf-Runde mit alten Reifen-Daten
-        self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': old_tire, 'Reifenalter': old_tire_age, 'Kommentar': self._race_comment('Einlauf', safety_event_status)})
+        # Speichere Inlap mit alten Reifen-Daten.
+        self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': old_tire, 'Reifenalter': old_tire_age, 'Kommentar': self._race_comment('Inlap', safety_event_status)})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

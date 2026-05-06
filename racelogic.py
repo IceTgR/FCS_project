@@ -133,6 +133,9 @@ def race_simulation():
 
         # Zeige den Countdown direkt im Fragment an, damit er bei jedem Fragment-Refresh neu berechnet wird.
         st.info(f'⏱️ Automatisch nächste Runde in {remaining_time:.1f} Sekunden... (oder wähle unten manuell)')
+
+        # Halte die Boxenstopp-Reifenauswahl persistent, damit sie immer sichtbar bleibt.
+        st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'], key='pitstop_tire_choice')
         
         # Weiter ohne Boxenstopp.
         col1, col2 = st.columns(2)
@@ -156,9 +159,8 @@ def race_simulation():
         
         with col2:
             if st.button('Boxenstopp', key='pit_btn'):
-                # Lasse Spieler nächste Reifenmischung für Boxenstopp wählen.
-                new_tire = st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'])
                 # Fahre in die Boxengasse und wechsle Reifen.
+                new_tire = st.session_state.pitstop_tire_choice
                 roll_safety_event()
                 apply_safety_event_effect(st.session_state.player)
                 st.session_state.player.box(

@@ -4,7 +4,6 @@ import time
 
 import streamlit as st
 import pandas as pd
-import streamlit.components.v1 as components
 from car import Car
 from opponents import advance_opponents, build_opponent_table
 
@@ -78,6 +77,7 @@ def write_chosen_options():
     if hasattr(st.session_state, 'opponents'):
         st.write(f'Das Feld hat nun {len(st.session_state.opponents)} computergesteuerte Gegner.')
     
+@st.fragment(run_every=1)
 def race_simulation():
     """Verwaltet Rennablauf, Spieler-Aktionen und zeigt Live-Rennstatus an."""
     # Zeige aktuellen Rennstatus oben auf dem Bildschirm an.
@@ -131,31 +131,8 @@ def race_simulation():
             st.session_state.lap_started_for = st.session_state.player.lap
             st.rerun()
 
-        # Rendern Countdown und Browser-Refresh direkt im Client, damit die Zeit sichtbar weiterläuft.
-        components.html(
-            f"""
-            <div id=\"fcs-countdown\" style=\"font-family:sans-serif;font-size:1rem;padding:0.25rem 0;\">
-                ⏱️ Automatisch nächste Runde in <strong><span id=\"fcs-countdown-value\">{remaining_time:.1f}</span></strong> Sekunden... (oder wähle unten manuell)
-            </div>
-            <script>
-            (() => {{
-                const endTime = Date.now() + {int(remaining_time * 1000)};
-                const valueEl = document.getElementById('fcs-countdown-value');
-                const tick = () => {{
-                    const secondsLeft = Math.max(0, (endTime - Date.now()) / 1000);
-                    valueEl.textContent = secondsLeft.toFixed(1);
-                    if (secondsLeft <= 0) {{
-                        clearInterval(timerId);
-                        window.parent.location.reload();
-                    }}
-                }};
-                const timerId = window.setInterval(tick, 100);
-                tick();
-            }})();
-            </script>
-            """,
-            height=48,
-        )
+        # Zeige den Countdown direkt im Fragment an, damit er bei jedem Fragment-Refresh neu berechnet wird.
+        st.info(f'⏱️ Automatisch nächste Runde in {remaining_time:.1f} Sekunden... (oder wähle unten manuell)')
         
         # Weiter ohne Boxenstopp.
         col1, col2 = st.columns(2)

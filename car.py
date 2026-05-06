@@ -96,6 +96,8 @@ class Car:
     @property
     def total_time(self):
         """Gibt die Gesamtzeit des Rennens zurück."""
+        return self._total_time
+    
     @total_time.setter
     def total_time(self, value):
         """Setzt die Gesamtzeit des Rennens."""

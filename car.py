@@ -1,4 +1,4 @@
-"""This is the car module, which contains the Car class."""
+"""Auto-Modul mit Car-Klasse für F1-Rennverhalten."""
 
 import joblib
 import pandas as pd
@@ -7,10 +7,10 @@ import random
 from ML_lap_times import train_dry_models
 
 class Car:
-    """This is the Car class, which represents a F1 car."""
+    """Repräsentiert einen F1-Rennwagen mit Leistung und Rennhistorie."""
 
     def __init__(self, team, track, tire):
-        """Initialize the Car object."""
+        """Initialisiert Auto mit Team, Strecke und Startreifen."""
         self._team = team
         self._track = track
         self.tire = tire
@@ -25,124 +25,120 @@ class Car:
 
     @property
     def team(self):
-        """Return the cars driver."""
+        """Gibt das Team des Autos zurück."""
         return self._team
     
     @property
     def track(self):
-        """Return the cars track."""
+        """Gibt die Rennstrecke zurück."""
         return self._track
         
     @property
     def tire(self):
-        """Return the cars tire."""
+        """Gibt die aktuelle Reifenmischung zurück."""
         return self._tire
     
     @tire.setter
     def tire(self, value):
-        """Set the cars tire."""
+        """Setzt die Reifenmischung (SOFT, MEDIUM, HARD)."""
         if value not in ["SOFT", "MEDIUM", "HARD"]:
             raise ValueError("Tire must be 'SOFT', 'MEDIUM', or 'HARD'.")
         self._tire = value
 
     @property
     def tire_age(self):
-        """Return the cars tire age."""
+        """Gibt das Alter des Reifens in Runden zurück."""
         return self._tire_age
     
     @tire_age.setter
     def tire_age(self, value):
-        """Set the cars tire age."""
+        """Setzt das Reifenalter."""
         if value < 0:
             raise ValueError("Tire age cannot be negative.")
         self._tire_age = value
 
     @property
     def lap(self):
-        """Return the cars current lap."""
+        """Gibt die aktuelle Rundennummer zurück."""
         return self._lap
     
     @lap.setter
     def lap(self, value):
-        """Set the cars current lap."""
+        """Setzt die aktuelle Rundennummer."""
         if value < 1:
             raise ValueError("Lap must be at least 1.")
         self._lap = value
 
     @property
     def lap_time(self):
-        """Return the cars lap time."""
+        """Gibt die Rundenzeit in Sekunden zurück."""
         return self._lap_time
     
     @lap_time.setter
     def lap_time(self, value):
-        """Set the cars lap time."""
+        """Setzt die Rundenzeit in Sekunden."""
         if value < 0:
             raise ValueError("Lap time cannot be negative.")
         self._lap_time = value
 
     @property
     def race_history(self):
-        """Return the race history of the car (a list of lap times)."""
+        """Gibt die Rennhistorie als Liste zurück."""
         return self._race_history
     
     @race_history.setter
     def race_history(self, value):
-        """Set the race history of the car (a list of lap times)."""
+        """Setzt die Rennhistorie."""
         if not isinstance(value, list):
             raise ValueError("Race history must be a list of lap times.")
         self._race_history = value
 
     @property
-    def total_time(self):      
-        """Return the cars total time."""
-        return self._total_time
-    
+    def total_time(self):
+        """Gibt die Gesamtzeit des Rennens zurück."""
     @total_time.setter
     def total_time(self, value):
-        """Set the cars total time."""
+        """Setzt die Gesamtzeit des Rennens."""
         if value < 0:
             raise ValueError("Total time cannot be negative.")
         self._total_time = value
 
     @property
-    def pitstop_counter(self):        
-        """Return the number of pitstops the car has made."""
+    def pitstop_counter(self):
+        """Gibt die Anzahl der Boxenstopps zurück."""
         return self._pitstop_counter   
 
     @pitstop_counter.setter
     def pitstop_counter(self, value):
-        """Set the number of pitstops the car has made."""
+        """Setzt die Anzahl der Boxenstopps."""
         if value < 0:
             raise ValueError("Pitstop counter cannot be negative.")
         self._pitstop_counter = value 
 
     @property
-    def outlap_pending(self):        
-        """Return whether the car has an outlap pending after a pit stop."""
+    def outlap_pending(self):
+        """Gibt zurück, ob eine Auslauf-Runde nach Boxenstopp ausstehend ist."""
         return self._outlap_pending
     
     @outlap_pending.setter
     def outlap_pending(self, value):
-        """Set whether the car has an outlap pending or not."""
+        """Setzt ausstehende Auslauf-Runde."""
         if not isinstance(value, bool):
             raise ValueError("outlap_pending must be a boolean value.")
         self._outlap_pending = value
 
     @property
-    def outlap_comment_pending(self):        
-        """Return whether the car has an outlap comment pending after a pit stop."""
+    def outlap_comment_pending(self):
+        """Gibt zurück, ob Auslauf-Kommentar ausstehend ist."""
         return self._outlap_comment_pending
     
     @outlap_comment_pending.setter
     def outlap_comment_pending(self, value):
-        """Set whether the car has an outlap comment pending or not."""
-        if not isinstance(value, bool):
-            raise ValueError("outlap_comment_pending must be a boolean value.")
+        """Setzt ausstehenden Auslauf-Kommentar."""
         self._outlap_comment_pending = value
 
     def _race_comment(self, lap_type, safety_event_status=None):
-        """Build a human-readable comment for the race log."""
+        """Erstellt Kommentar für Rennprotokoll mit Rundentyp und Event-Status."""
         comment_parts = []
 
         if lap_type != 'Normal':
@@ -156,10 +152,10 @@ class Car:
         return ', '.join(comment_parts)
 
     def advance_lap(self, safety_event_status=None):
-        """Simulate the car advancing to the next lap."""
+        """Verarbeitet Auto zur nächsten Runde und aktualisiert Historie."""
         self.total_time += self.lap_time
-        # Determine lap type: Outlap if coming out of pit stop, Normal otherwise
-        lap_type = 'Outlap' if self._outlap_comment_pending else 'Normal'
+        # Bestimme Rundentyp: Auslauf nach Boxenstopp oder Normal
+        lap_type = 'Auslauf' if self._outlap_comment_pending else 'Normal'
         self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': self.tire, 'Tire Age': self.tire_age, 'Kommentar': self._race_comment(lap_type, safety_event_status)})
         if self._outlap_comment_pending:
             self._outlap_comment_pending = False
@@ -167,41 +163,30 @@ class Car:
         self.tire_age += 1
 
     def inlap_penalty(self):
-        """Return the total extra time lost on the inlap.
-
-        In Formula 1 the stop time is counted into the lap that enters the pit
-        lane, not as a separate racing lap. We therefore calculate the complete lost time
-        from the pitstop here.
-        """
+        """Gibt Zeitverlust des Einlauf-Boxenstopps in Sekunden zurück."""
         pit_loss = random.uniform(19.5, 25.0)
         return pit_loss
 
     def outlap_penalty(self):
-        """Return the extra time for the first lap after the pit stop.
-
-        The outlap is slower because the tires and brakes are cold and the car
-        needs one lap to get back into a normal operating window. We randomize
-        this slightly because tire warm-up is not identical every time.
-        """
+        """Gibt Zeitverlust der Auslauf-Runde nach Boxenstopp zurück."""
         return random.uniform(0.6, 1.4)
 
     def box(self, new_tire, safety_event_status=None, pitstop_multiplier=1.0):
-        """Simulate the car going to the box and changing tires."""
-        # The pit stop is counted into the inlap time, so we add the full
-        # combined penalty before storing the lap in the race history.
+        """Führt Boxenstopp durch und wechselt Reifenmischung."""
+        # Boxenstopp-Zeit wird in der Einlauf-Rundenzeit addiert
         self.lap_time += self.inlap_penalty() * pitstop_multiplier
         
-        # Store the old tire info before changing it, for the race history entry
+        # Speichere alte Reifen-Daten vor dem Wechsel
         old_tire = self.tire
         old_tire_age = self.tire_age
         
-        # Now change the tire
+        # Wechsle zur neuen Reifenmischung
         self.tire = new_tire
         self.tire_age = 0
         self.total_time += self.lap_time
         
-        # Record the inlap with the OLD tire and OLD tire age
-        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Kommentar': self._race_comment('Inlap', safety_event_status)})
+        # Speichere Einlauf-Runde mit alten Reifen-Daten
+        self.race_history.append({'Lap': self.lap, 'Lap Time': self.lap_time, 'Tire': old_tire, 'Tire Age': old_tire_age, 'Kommentar': self._race_comment('Einlauf', safety_event_status)})
         self.lap += 1
         self.pitstop_counter += 1
         # The next lap after the stop is the outlap, so the following ML

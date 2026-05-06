@@ -1,4 +1,4 @@
-# Here we create the Machine Learning part and train our models.
+# ML-Modell-Training und Rundenzeit-Vorhersagen mit Random Forest.
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -9,35 +9,36 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
 
 
-# Dry model: We will use a Random Forest Regressor to predict lap times in dry conditions.
-# We chose this because it can capture complex, non-linear relationships and is robust.
-# The chance of overfitting is also reduced.
+# Trockene Bedingungen: Random Forest für nicht-lineare Rundenzeit-Beziehungen.
+# Wir wählen RandomForest wegen Robustheit und geringerem Überfitting.
 
 def train_dry_models(df_dry):
-    # Create directory for dry models if it doesn't exist
+    """Trainiert separate Random Forest Modelle für jede Rennstrecke."""
+    # Erstelle Verzeichnis für Modelle falls nicht vorhanden
     if not os.path.exists('models/dry'):
         os.makedirs('models/dry')
 
-    # Get unique tracks because we will train a separate model for each track
+    # Hole eindeutige Strecken - trainiere ein Modell pro Strecke
     tracks = df_dry['Track'].unique()
 
-    # Initialize results dictionary to store MAE for each track
+    # Initialisiere Ergebnis-Dict für MAE pro Strecke
     results = {}
 
-    # Train a model per track
+    # Trainiere ein Modell pro Strecke
     for track in tracks:
-        track_df = df_dry[df_dry['Track'] == track].copy() # get data for the track
+        # Hole Daten für spezifische Strecke
+        track_df = df_dry[df_dry['Track'] == track].copy()
 
-        # Prepare features and target variable
-        # Team and Compound are categorical, we will encode them accordingly
+        # Bereite Features und Ziel vor
+        # Team und Compound sind kategorial - werde One-Hot-Encoded
         features = ['LapNumber', 'TyreLife', 'AirTemp', 'Team', 'Compound']
         X = pd.get_dummies(track_df[features], columns=['Team', 'Compound'])
         y = track_df['LapTimeSec']
 
-        # Split data into training and testing sets, to evaluate our model's performance
+        # Teile Daten in Trainings- und Test-Set
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Initialize and train the Random Forest Regressor
+        # Initialisiere und trainiere Random Forest Regressor
         model = RandomForestRegressor(
             n_estimators=200,
             max_depth=12,
@@ -47,15 +48,17 @@ def train_dry_models(df_dry):
         )
         model.fit(X_train, y_train)
 
-        # Evaluate the model on the test set
+        # Evaluiere Modell auf Test-Set
         predictions = model.predict(X_test)
         mae = mean_absolute_error(y_test, predictions)
         print(f'Durchschnittlicher Fehler (MAE) für {track}: {mae:.3f} Sekunden')
         
-        # Save the trained model for later use
-        track_id = track.replace(' ', '_') # replace spaces with underscores for file naming
+        # Speichere trainiertes Modell für spätere Verwendung
+        # Ersetze Leerzeichen mit Unterstrich für Dateinamen
+        track_id = track.replace(' ', '_')
         joblib.dump(model, f'models/dry/rf_{track_id}.pkl')
-        joblib.dump(X.columns.tolist(), f'models/dry/cols_{track_id}.pkl') # save the feature names for later use
+        # Speichere Feature-Namen für spätere Verwendung
+        joblib.dump(X.columns.tolist(), f'models/dry/cols_{track_id}.pkl')
 
         results[track] = mae
         print(f'Modell für {track} gespeichert.')
@@ -68,38 +71,41 @@ def train_dry_models(df_dry):
 
 @st.cache_data
 def predict_lap_time(track_name, team, compound, lap_number, air_temp):
-    # Format the track name exactly how you saved it
+    """Vorhersage der Rundenzeit mit trainiertem ML-Modell."""
+    # Formatiere Strecken-Namen wie beim Speichern
     track_id = track_name.replace(' ', '_')
     model_path = f'models/dry/rf_{track_id}.pkl'
     cols_path = f'models/dry/cols_{track_id}.pkl'
 
+    # Fallback-Vorhersage falls Modell nicht trainiert ist
     if not os.path.exists(model_path):
-        return 80.0 + (lap_number * 0.1) # Safe fallback just in case the model isn't trained!
+        return 80.0 + (lap_number * 0.1)
 
-    # Load the model
+    # Lade Modell und Feature-Namen
     model = joblib.load(model_path)
     model_columns = joblib.load(cols_path)
 
-    # Create a DataFrame for this single lap
+    # Erstelle DataFrame für eine einzelne Runde
     input_data = pd.DataFrame({
         'LapNumber': [lap_number],
-        'TyreLife': [lap_number], # Assuming tire age matches lap number for now
+        'TyreLife': [lap_number],  # Reifenalter = Rundennummer
         'AirTemp': [air_temp]
     })
 
-    # Add dummy columns with 0s
+    # Fülle fehlende Spalten mit 0
     for col in model_columns:
         if col not in input_data.columns:
             input_data[col] = 0
 
-    # Set the specific team and compound to 1
+    # Setze spezifisches Team und Compound zu 1
     if f'Team_{team}' in input_data.columns:
         input_data[f'Team_{team}'] = 1
     if f'Compound_{compound}' in input_data.columns:
         input_data[f'Compound_{compound}'] = 1
 
+    # Ordne Spalten nach Modell-Spalten
     input_data = input_data[model_columns]
 
-    # Predict and return the time
+    # Vorhersage und Rückgabe
     return model.predict(input_data)[0]
     

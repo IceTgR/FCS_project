@@ -1,5 +1,6 @@
-# this is the feature that runs the simulation
+# Kernsimulationslogik für das Rennen.
 import random
+import time
 
 import streamlit as st
 import pandas as pd
@@ -8,11 +9,7 @@ from opponents import advance_opponents, build_opponent_table
 
 
 def roll_safety_event():
-    """Start a new safety event if no event is currently active.
-    
-    Duration handling happens after the lap is stored so the current lap can
-    still see the event that was active while it was driven.
-    """
+    """Startet ein neues Sicherheitsereignis (SC/VSC) mit Zufallsdauer."""
     if not hasattr(st.session_state, 'safety_event_duration'):
         st.session_state.safety_event_duration = 0
     if not hasattr(st.session_state, 'safety_event_status'):
@@ -35,7 +32,7 @@ def roll_safety_event():
 
 
 def resolve_safety_event():
-    """Count down the active safety event after a lap has been recorded."""
+    """Reduziert die verbleibende Sicherheitsereignis-Dauer um 1 Runde."""
     if st.session_state.safety_event_status is None:
         return
 
@@ -47,7 +44,7 @@ def resolve_safety_event():
 
 
 def get_safety_event_lap_multiplier():
-    """Return a lap-time multiplier for the active safety event."""
+    """Gibt Rundenzeit-Multiplikator für aktuelles Sicherheitsereignis zurück."""
     current_event = st.session_state.safety_event_status if hasattr(st.session_state, 'safety_event_status') else None
 
     if current_event == 'SAFETYCAR':
@@ -58,7 +55,7 @@ def get_safety_event_lap_multiplier():
 
 
 def get_safety_event_pitstop_multiplier():
-    """Return a pit-stop multiplier for the active safety event."""
+    """Gibt Boxenstopp-Multiplikator für aktuelles Sicherheitsereignis zurück."""
     current_event = st.session_state.safety_event_status if hasattr(st.session_state, 'safety_event_status') else None
 
     if current_event == 'SAFETYCAR':
@@ -69,18 +66,20 @@ def get_safety_event_pitstop_multiplier():
 
 
 def apply_safety_event_effect(car):
-    """Apply the current race-control effect to the predicted lap time."""
+    """Wendet Rundenzeit-Effekt des aktiven Sicherheitsereignisses an."""
     car.lap_time *= get_safety_event_lap_multiplier()
 
-# Show the fixed choices made before the race starts.
+# Zeige die vor dem Rennen gewählten Optionen an.
 def write_chosen_options():
+    """Zeigt Team, Reifen und Strecke des Spielers an."""
     st.write(f'Du hast {st.session_state.player.team} als dein Team gewählt, '
         f'startest mit {st.session_state.player.tire} Reifen auf der {st.session_state.track}.')
     if hasattr(st.session_state, 'opponents'):
         st.write(f'Das Feld hat nun {len(st.session_state.opponents)} computergesteuerte Gegner.')
     
 def race_simulation():
-    # Display the current race status at the top of the screen.
+    """Verwaltet Rennablauf, Spieler-Aktionen und zeigt Live-Rennstatus an."""
+    # Zeige aktuellen Rennstatus oben auf dem Bildschirm an.
     st.write(f'Letzte Rundenzeit: {st.session_state.player.lap_time if st.session_state.player.lap > 1 else "dies ist deine erste Runde"}\n'
             f'Aktuelle Runde: {st.session_state.player.lap if st.session_state.player.lap <= st.session_state.total_laps else "beendet"}')
 
@@ -90,7 +89,7 @@ def race_simulation():
     elif current_event == 'VSC':
         st.info('Virtueller Safety Car ist aktiv.')
 
-    # End-of-race checks.
+    # Überprüfe Rennende.
     if st.session_state.player.lap == st.session_state.total_laps + 1:
         if st.session_state.player.pitstop_counter == 0:
             st.write('Du wurdest disqualifiziert, da du keinen Boxenstopp gemacht hast!')
@@ -98,12 +97,20 @@ def race_simulation():
             st.write('Glückwunsch, du hast das Rennen beendet!')
 
     else:
-        # Compute the lap time before the user chooses an action.
+        # Berechne Rundenzeit vor Spieler-Aktion.
         air_temp = st.session_state.get('air_temp', 25)
         st.session_state.player.predict_lap_time(air_temp=air_temp)
-    
-        # Continue without pitting.
-        if st.button('Weitermachen'):
+        
+        # Initialisiere lap_start_time wenn Runde gerade begonnen hat.
+        if 'lap_start_time' not in st.session_state:
+            st.session_state.lap_start_time = time.time()
+        
+        # Berechne verstrichene Zeit seit Rundenstart in Sekunden.
+        elapsed_time = time.time() - st.session_state.lap_start_time
+        timeout_seconds = 5.0
+        
+        # Auto-Weitermachen nach 5 Sekunden ohne Spieler-Input.
+        if elapsed_time > timeout_seconds:
             roll_safety_event()
             apply_safety_event_effect(st.session_state.player)
             st.session_state.player.advance_lap(st.session_state.safety_event_status)
@@ -116,31 +123,56 @@ def race_simulation():
                     get_safety_event_pitstop_multiplier(),
                 )
             resolve_safety_event()
-            st.rerun(scope = 'app')
+            st.session_state.lap_start_time = time.time()  # Setze für nächste Runde zurück.
+            st.rerun()
+        else:
 
-        # Let user pick next tire compound for an optional pit stop.
-        new_tire = st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'])
-        # Enter pit lane and switch to the selected tire.
-        if st.button('Boxenstopp'):
-            roll_safety_event()
-            apply_safety_event_effect(st.session_state.player)
-            st.session_state.player.box(
-                new_tire,
-                st.session_state.safety_event_status,
-                pitstop_multiplier=get_safety_event_pitstop_multiplier(),
-            )
-            if hasattr(st.session_state, 'opponents'):
-                advance_opponents(
-                    st.session_state.opponents,
-                    st.session_state.total_laps,
+
+            # Zeige verbleibende Zeit für automatischen Fortschritt an.
+            remaining_time = timeout_seconds - elapsed_time
+            st.info(f'⏱️ Automatisch nächste Runde in {remaining_time:.1f} Sekunden... (oder wähle unten manuell)')
+            
+            # Weiter ohne Boxenstopp.
+            if st.button('Nächste Runde'):
+                roll_safety_event()
+                apply_safety_event_effect(st.session_state.player)
+                st.session_state.player.advance_lap(st.session_state.safety_event_status)
+                if hasattr(st.session_state, 'opponents'):
+                    advance_opponents(
+                        st.session_state.opponents,
+                        st.session_state.total_laps,
+                        st.session_state.safety_event_status,
+                        get_safety_event_lap_multiplier(),
+                        get_safety_event_pitstop_multiplier(),
+                    )
+                resolve_safety_event()
+                st.session_state.lap_start_time = time.time()  # Reset für nächste Runde.
+                st.rerun(scope = 'app')
+
+            # Lasse Spieler nächste Reifenmischung für Boxenstopp wählen.
+            new_tire = st.radio('Wähle Reifenmischung für Boxenstopp', ['SOFT', 'MEDIUM', 'HARD'])
+            # Fahre in die Boxengasse und wechsle Reifen.
+            if st.button('Boxenstopp'):
+                roll_safety_event()
+                apply_safety_event_effect(st.session_state.player)
+                st.session_state.player.box(
+                    new_tire,
                     st.session_state.safety_event_status,
-                    get_safety_event_lap_multiplier(),
-                    get_safety_event_pitstop_multiplier(),
+                    pitstop_multiplier=get_safety_event_pitstop_multiplier(),
                 )
-            resolve_safety_event()
-            st.rerun(scope = 'app')
+                if hasattr(st.session_state, 'opponents'):
+                    advance_opponents(
+                        st.session_state.opponents,
+                        st.session_state.total_laps,
+                        st.session_state.safety_event_status,
+                        get_safety_event_lap_multiplier(),
+                        get_safety_event_pitstop_multiplier(),
+                    )
+                resolve_safety_event()
+                st.session_state.lap_start_time = time.time()  # Reset für nächste Runde.
+                st.rerun(scope = 'app')
 
-    # Show race data in table and chart form.
+    # Zeige Rennhistorie als Tabelle und Diagramm.
     st.subheader('Renngeschichte')
     history = pd.DataFrame(st.session_state.player.race_history, columns=['Runde', 'Rundenzeit', 'Reifen', 'Reifenalter', 'Kommentar'])
 

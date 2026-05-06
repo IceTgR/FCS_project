@@ -1,16 +1,16 @@
-# Here we preprocess the retrieved data so that it is ready for training our ML models.
+# Vorverarbeitung von F1-Daten für ML-Modell-Training.
 import sqlite3
 import pandas as pd
 
 def get_preprocessed_datasets():
-    """This function will return the preprocessed datasets, split into wet and dry, ready for training our ML models."""
-    # Loading data from SQL
+    """Lädt und bereitet Daten für ML-Training vor (Nass/Trocken)."""
+    # Lade Daten aus SQL-Datenbank
     conn = sqlite3.connect('f1_project.db')
     df = pd.read_sql("SELECT * FROM laptimes", conn)
     conn.close()
 
-    # Tyre Mapping: Due to different tyre compounds being used in different seasons,
-    # we need to create a mapping to standardize the tyre types across all seasons.
+    # Reifen-Standardisierung: Verschiedene Jahrzehnte nutzten unterschiedliche Namen
+    # Standardisiere auf SOFT, MEDIUM, HARD
     tyre_map = {
         'SOFT': 'SOFT', 'SUPERSOFT': 'SOFT', 'ULTRASOFT': 'SOFT', 'HYPERSOFT': 'SOFT',
         'MEDIUM': 'MEDIUM',
@@ -20,30 +20,29 @@ def get_preprocessed_datasets():
     }
     df['Compound'] = df['Compound'].map(tyre_map)
 
-    # Lap Filtering: We remove everything, which is not a "clean" lap to ensure data quality for better ML results.
+    # Runden-Filterung: Entferne nicht "saubere" Runden für bessere Datenqualität
     df_clean = df[
-        (df['IsOutlap'] == 0) &      # Remove outlaps (will implement this logic manually)
-        (df['IsPitstop'] == 0)       # Remove inlaps (will implement this logic manually)
+        (df['IsOutlap'] == 0) &      # Entferne Ausläufe
+        (df['IsPitstop'] == 0)       # Entferne Einläufe
     ].copy()
 
-    # Splitting into wet and dry datasets
+    # Teile in Nass- und Trocken-Datensätze auf
     dry_tyres = ['SOFT', 'MEDIUM', 'HARD']
     wet_tyres = ['INTERMEDIATE', 'WET']
 
-    # Dry dataset: Only dry tyres AND no rain flag to ensure data quality
+    # Trocken: Nur Trockenreifen UND kein Regen
     df_dry = df_clean[
         (df_clean['Compound'].isin(dry_tyres)) & 
         (df_clean['IsRaining'] == 0)
     ].copy()
 
-    # Wet dataset: Only wet tyres AND rain flag to ensure data quality
+    # Nass: Nur Nassreifen UND Regen
     df_wet = df_clean[
         (df_clean['Compound'].isin(wet_tyres)) & 
         (df_clean['IsRaining'] == 1)
     ].copy()
 
-    # Removing outliers, which are likely to be caused by safety cars, driving mistakes, or other incidents. 
-    # We do this by removing laps which are more than 10% slower than the median lap time of the respective track.
+    # Entferne Ausreißer (Unfälle, Fahrfehler): > 10% über Median-Rundenzeit
     def remove_outliers(df):
         df['MedianTime'] = df.groupby('Track')['LapTimeSec'].transform('median')
         df = df[df['LapTimeSec'] < df['MedianTime'] * 1.10]

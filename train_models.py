@@ -1,4 +1,4 @@
-# ML Model Training Section
+# ML-Modell-Training für Rundenzeit-Vorhersagen.
 import os
 
 from data_preprocessing import get_preprocessed_datasets
@@ -12,22 +12,25 @@ MODEL_PATHS = [f"models/dry/rf_{track.replace(' ', '_')}.pkl" for track in TRACK
 
 
 def models_exist():
+    """Überprüft, ob alle ML-Modelle vorhanden sind."""
     return all(os.path.exists(path) for path in MODEL_PATHS)
 
 
 def ensure_ml_assets():
-    """Create the database and train the ML models if they are missing."""
+    """Erstellt Datenbank und trainiert ML-Modelle falls nicht vorhanden."""
     status = {
         'created_db': False,
         'trained_models': False,
         'results': None,
     }
 
+    # Erstelle Datenbank wenn nicht vorhanden
     if not os.path.exists(DB_PATH):
         years = range(2018, 2026)
         fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
         status['created_db'] = True
 
+    # Trainiere Modelle wenn nicht vorhanden
     if status['created_db'] or not models_exist():
         df_dry, _ = get_preprocessed_datasets()
         results = train_dry_models(df_dry)

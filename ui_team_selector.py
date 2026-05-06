@@ -1,30 +1,32 @@
+# Team-Auswahl Interface mit farbigen Team-Buttons.
 import streamlit as st
 
 def render_team_selector():
+    """Rendert interaktive Team-Auswahl mit 5 F1-Teams."""
     st.write("### 🏎️ Wähle dein Team")
     
-    # F1 Team Hex Colors 
+    # F1 Team Farben als Hex-Codes
     team_colors = {
-        "Ferrari": "#DC0000",       # Ferrari Red
-        "Red Bull": "#121F45",      # Dark Navy Blue
-        "Mercedes": "#00A19C",      # Petronas Teal
+        "Ferrari": "#DC0000",       # Ferrari Rot
+        "Red Bull": "#121F45",      # Dunkles Navy Blau
+        "Mercedes": "#00A19C",      # Petronas Türkis
         "McLaren": "#FF8000",       # Papaya Orange
-        "Williams": "#005AFF",      # Bright True Blue
+        "Williams": "#005AFF",      # Helles True Blau
     }
 
-    # Initialize the selected team in session state if it doesn't exist
+    # Initialisiere ausgewähltes Team im Session State
     if 'team_player' not in st.session_state:
         st.session_state.team_player = "Ferrari" 
 
     teams = list(team_colors.keys())
     
-    # Create a single row of 5 teams
+    # Erstelle eine Reihe mit 5 Teams
     cols = st.columns(5)
     for i in range(5):
         team = teams[i]
         color = team_colors[team]
         with cols[i]:
-            # 1. The custom colored box (HTML)
+            # 1. Farbiger Box für Team-Name (HTML)
             st.markdown(f"""
             <div style="
                 background-color: {color};
@@ -44,7 +46,7 @@ def render_team_selector():
             </div>
             """, unsafe_allow_html=True)
             
-            # 2. The selection button
+            # 2. Auswahl-Button (zeigt Checkmark oder Team-Name)
             if st.session_state.team_player == team:
                 st.button("✅ Ausgewählt", key=f"btn_{team}", disabled=True, use_container_width=True)
             else:

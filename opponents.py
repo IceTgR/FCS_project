@@ -62,6 +62,7 @@ class Opponent:
     """Ein KI-Gegner mit Auto und einfacher Strategie."""
 
     def __init__(self, team, car, starting_tire, pit_lap, next_compound):
+        """Speichert Team, Auto und geplante Stoppdaten."""
         # Jeder Gegner speichert nur die Daten, die wir für das Rennen brauchen.
         self.team = team
         self.car = car

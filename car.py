@@ -191,27 +191,20 @@ class Car:
         self.race_history.append({'Runde': self.lap, 'Rundenzeit': self.lap_time, 'Reifen': old_tire, 'Reifenalter': old_tire_age, 'Kommentar': self._race_comment('Inlap', safety_event_status)})
         self.lap += 1
         self.pitstop_counter += 1
-        # The next lap after the stop is the outlap, so the following ML
-        # prediction should include an extra penalty once.
+        # Die nächste Runde ist die Outlap; dafür einmal Zusatzverlust einplanen.
         self._outlap_pending = True
         self._outlap_comment_pending = True
 
     def age_tires(self, laps):
-        """Simulate the car aging its tires by a certain number of laps."""
+        """Erhöht das Reifenalter um eine Anzahl Runden."""
         self.tire_age += laps
 
     def tire_wear_penalty(self):
-        """Return a manual tire wear penalty in seconds.
+        """Gibt einen manuellen Reifenverschleiß-Aufschlag in Sekunden zurück.
 
-        We keep this outside the ML model because the training data mostly
-        contains stints that end before tires become truly extreme. That means
-        the model cannot reliably learn a strong wear curve from data alone.
-
-        The penalty is different for each compound because soft tires degrade
-        faster, medium tires sit in the middle, and hard tires are more stable.
-        We use a quadratic increase after a compound-specific threshold because
-        tire degradation usually accelerates as the stint gets longer.
-        A small random factor keeps the simulation from feeling perfectly static.
+        Außerhalb des ML-Modells, weil sehr lange Stints in den Trainingsdaten
+        unterrepräsentiert sind. Nach einem Mischungs-Schwellwert steigt der
+        Aufschlag quadratisch an; ein kleiner Zufallsfaktor variiert das Ergebnis.
         """
         wear_profiles = {
             'SOFT': {
@@ -236,19 +229,18 @@ class Car:
                 'random_high': 1.02,
             },
         }
-        # Use the current tire compound directly..
+        # Nutze direkt die aktuelle Reifenmischung.
         profile = wear_profiles[self.tire]
 
-        # Before the threshold, the tire is assumed to be in a usable window.
-        # After that, we add a quadratic term so the degradation accelerates
-        # with stint length instead of growing only linearly.
+        # Bis zum Schwellwert gilt der Reifen als stabil.
+        # Danach steigt der Verschleiß beschleunigt statt nur linear.
         if self.tire_age <= profile['threshold']:
             return 0.0
 
         wear_laps = self.tire_age - profile['threshold']
         penalty = (wear_laps ** 2) * profile['quadratic'] + wear_laps * profile['linear']
 
-        # Add a small random variation so the effect does not look perfectly linear.
+        # Kleine Zufallsvarianz für realistischere Entwicklung.
         penalty *= random.uniform(profile['random_low'], profile['random_high'])
         return penalty
 
@@ -263,7 +255,7 @@ class Car:
             model = joblib.load(model_path)
             saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
 
-            # add live data to the model input
+            # Live-Daten zum Modellinput ergänzen.
             row = {
                 'Team': self.team,
                 'Compound': self.tire,
@@ -278,19 +270,13 @@ class Car:
 
             prediction = float(model.predict(df)[0])
 
-            # Apply the outlap penalty once directly after a pit stop.
-            # We keep this outside the ML model because outlaps are driven by
-            # cold tires and brakes, which are not represented cleanly in the
-            # race-lap training data.
+            # Outlap-Aufschlag einmal direkt nach dem Boxenstopp anwenden.
+            # Das bleibt außerhalb des ML-Modells.
             if self._outlap_pending:
                 prediction += self.outlap_penalty()
                 self._outlap_pending = False
 
-            # Add a manual tire wear penalty on top of the ML prediction.
-            # This is intentional: the available race data does not contain enough
-            # very long stints for the model to learn the degradation curve well.
-            # The ML model still provides the baseline pace, while this term
-            # enforces the visible drop-off from tire aging.
+            # Manuellen Reifenverschleiß-Aufschlag auf die ML-Basis addieren.
             prediction += self.tire_wear_penalty()
 
             # if self.safety_car:
@@ -300,11 +286,11 @@ class Car:
             return prediction
 
     def __repr__(self):
-        """return a string representation for repr()."""
+        """Gibt die technische String-Darstellung zurück."""
         return f"Car(driver={self.driver}, team={self.team}, tire={self.tire}, tire_age={self.tire_age})"
     
     def __str__(self):
-        """return a string representation for str()."""
+        """Gibt die lesbare String-Darstellung zurück."""
         return f"{self.driver} is driving for {self.team} with {self.tire} tires that are {self.tire_age} laps old."
     
     

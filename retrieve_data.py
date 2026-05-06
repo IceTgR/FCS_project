@@ -41,6 +41,7 @@ def fastf1_to_sql(years, track_list, team_list):
                 
                 # Hilfsfunktion: Gab es Regen während dieser Runde?
                 def check_rain(lap_row):
+                    """Prüft, ob während der Runde Regen auftrat."""
                     # Wir schauen, ob im Zeitfenster der Runde Rainfall registriert wurde
                     start = lap_row['Time'].total_seconds() - lap_row['LapTime'].total_seconds()
                     end = lap_row['Time'].total_seconds()

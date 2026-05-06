@@ -8,10 +8,10 @@ from opponents import create_opponents
 from train_models import ensure_ml_assets
 from ui_team_selector import render_team_selector
 
-# --- 1. PAGE SETUP ---
+# --- 1. SEITENKONFIGURATION ---
 st.set_page_config(layout="wide")
 
-# Initialize session state for page routing
+# Session-State für Seitenwechsel initialisieren.
 if 'race_started' not in st.session_state: 
     st.session_state.race_started = False
 
@@ -41,22 +41,22 @@ if 'ml_bootstrap_done' not in st.session_state:
 
 st.title('F1 Rennstrategie-Simulator')
 
-# Track-specific temperature ranges
+# Streckenspezifische Temperaturbereiche.
 TRACK_TEMP_RANGES = {
     'Monaco Grand Prix': {'min': 16, 'max': 28, 'default': 22},      
     'British Grand Prix': {'min': 14, 'max': 26, 'default': 20},     
 }
 
 # ==========================================
-# 🚪 PAGE 1: THE MAIN MENU (Setup Screen)
+# 🚪 SEITE 1: HAUPTMENÜ (Konfiguration)
 # ==========================================
 if not st.session_state.race_started:
     st.write('Du bist jetzt in der Position eines F1-Rennstrategen!')
 
-    # --- TEAM SELECTION ---
+    # --- TEAMAUSWAHL ---
     team_player = render_team_selector() 
 
-    # --- TRACK AND TIRE SELECTION ---
+    # --- STRECKEN- UND REIFENAUSWAHL ---
     st.write("### 🛠️ Rennparameter")
     col_track, col_start_tire, col_target_tire = st.columns(3)
     
@@ -70,7 +70,7 @@ if not st.session_state.race_started:
     with col_target_tire:
         target_tire = st.radio('Zielreifen:', ['SOFT', 'MEDIUM', 'HARD'], index=2, key="target_tire")
 
-    # --- TEMPERATURE SLIDER ---
+    # --- TEMPERATUR-SLIDER ---
     st.markdown("---")
     track_temps = TRACK_TEMP_RANGES.get(st.session_state.track, {'min': 15, 'max': 30, 'default': 22})
     air_temp = st.slider(
@@ -83,7 +83,7 @@ if not st.session_state.race_started:
     )
     st.session_state.air_temp = air_temp
 
-    # --- ML STRATEGIST PRE-RACE BRIEFING ---
+    # --- KI-STRATEGE: VORBESPRECHUNG ---
     sim_laps = 78 if st.session_state.track == 'Monaco Grand Prix' else 52
     
     with st.expander("🏎️ KI-Stratege Briefing", expanded=True):
@@ -116,13 +116,13 @@ if not st.session_state.race_started:
                 except Exception as e:
                     st.error(f"Ein Fehler während der Simulation ist aufgetreten: {e}")
 
-    # --- THE ONE AND ONLY START BUTTON ---
+    # --- STARTBUTTON ---
     st.markdown("---")
     if st.button('🏁 Simulation starten', type="primary", use_container_width=True):
-        # 1. Flag the race as started
+        # 1. Rennen als gestartet markieren.
         st.session_state.race_started = True
         
-        # 2. Build the player car and set laps
+        # 2. Spielerauto erstellen und Rundenzahl setzen.
         if st.session_state.track == 'Monaco Grand Prix':
             st.session_state.player = Car(team_player, 'Monaco Grand Prix', tire_start) 
             st.session_state.total_laps = 78 
@@ -130,18 +130,18 @@ if not st.session_state.race_started:
             st.session_state.player = Car(team_player, 'British Grand Prix', tire_start) 
             st.session_state.total_laps = 52 
             
-        # 3. Create opponents
+        # 3. Gegner erstellen.
         st.session_state.opponents = create_opponents(team_player, st.session_state.track, st.session_state.total_laps)
         
-        # 4. Rerun to instantly switch to Page 2
+        # 4. Neu laden und direkt zu Seite 2 wechseln.
         st.rerun()
 
 
 # ==========================================
-# 🚪 PAGE 2: THE SIMULATION (Race Screen)
+# 🚪 SEITE 2: DIE SIMULATION (Rennansicht)
 # ==========================================
 else: 
-    # Navigation header
+    # Navigationskopf.
     col_back, col_title, col_empty = st.columns([1, 4, 1])
     
     with col_back:
@@ -158,14 +158,14 @@ else:
 
     if 'player' in st.session_state:
         
-        # --- NEW: LIVE AI STRATEGY DASHBOARD ---
+        # --- NEU: ECHTZEIT-KI-STRATEGIEÜBERSICHT ---
         st.markdown("#### 🧠 Live KI-Strategie-Ratgeber")
         
-        # Create columns to put the dropdown next to the AI's recommendation
+        # Spalten: Auswahl links, Empfehlung rechts.
         col_advisor_input, col_advisor_output = st.columns([1, 2])
         
         with col_advisor_input:
-            # The dropdown for the user to change their mind mid-race
+            # Dropdown für Strategieänderung im Rennen.
             live_target_tire = st.selectbox(
                 "Boxenstrategie bewerten für:", 
                 ['SOFT', 'MEDIUM', 'HARD'], 
@@ -173,9 +173,9 @@ else:
             )
             
         with col_advisor_output:
-            # The AI instantly calculates the best lap for whatever is in the dropdown!
+            # KI berechnet direkt die beste Runde zur aktuellen Auswahl.
             try:
-                # We add a slight visual padding to align it with the dropdown box
+                # Kleine visuelle Ausrichtung zur Dropdown-Höhe.
                 st.write("") 
                 best_lap = find_optimal_pit_lap(
                     track_name=st.session_state.track,
@@ -185,14 +185,14 @@ else:
                     next_compound=live_target_tire,
                     air_temp=st.session_state.air_temp
                 )
-                # Display the live recommendation
+                # Live-Empfehlung anzeigen.
                 st.success(f"**Zielbereich:** Boxenstopp in **Runde {best_lap}** für frische **{live_target_tire}**-Reifen.")
             except Exception as e:
                 st.warning("KI benötigt trainierte Modelle für Live-Daten.")
 
         st.divider()
 
-        # --- EXISTING RACE LOGIC ---
+            # --- BESTEHENDE RENNLOGIK ---
         write_chosen_options()
         race_simulation()
 

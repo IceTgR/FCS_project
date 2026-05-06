@@ -5,7 +5,7 @@ import os
 from racelogic import write_chosen_options, race_simulation
 from car import Car
 from opponents import create_opponents
-from train_models import train_models
+from train_models import ensure_ml_assets
 from ui_team_selector import render_team_selector
 
 # --- 1. PAGE SETUP ---
@@ -14,6 +14,30 @@ st.set_page_config(layout="wide")
 # Initialize session state for page routing
 if 'race_started' not in st.session_state: 
     st.session_state.race_started = False
+
+if 'ml_bootstrap_done' not in st.session_state:
+    with st.spinner('Preparing data and ML models for the first launch...'):
+        st.session_state.ml_bootstrap_status = ensure_ml_assets()
+
+    st.session_state.ml_bootstrap_done = True
+
+    bootstrap_status = st.session_state.ml_bootstrap_status
+    status_lines = []
+    if bootstrap_status['created_db']:
+        status_lines.append('Database created')
+    elif os.path.exists('f1_project.db'):
+        status_lines.append('Database ready')
+
+    if bootstrap_status['trained_models']:
+        status_lines.append('Models trained')
+    elif os.path.exists('models/dry/rf_Monaco_Grand_Prix.pkl') and os.path.exists('models/dry/rf_British_Grand_Prix.pkl'):
+        status_lines.append('Models ready')
+
+    if status_lines:
+        st.info('ML setup: ' + ' | '.join(status_lines))
+
+    if bootstrap_status['trained_models'] and bootstrap_status['results']:
+        st.caption('Validation MAE (seconds): ' + ', '.join(f"{track}: {mae:.3f}" for track, mae in bootstrap_status['results'].items()))
 
 st.title('F1 Race Strategy Simulator')
 
@@ -28,8 +52,6 @@ TRACK_TEMP_RANGES = {
 # ==========================================
 if not st.session_state.race_started:
     st.write('You are now in the seat of the F1 race strategist!')
-    
-    train_models() 
 
     # --- TEAM SELECTION ---
     team_player = render_team_selector() 
@@ -90,7 +112,7 @@ if not st.session_state.race_started:
                         st.info(f"**Risk Mitigation:** For {team_player}, the AI prioritizes track position. Pitting on Lap {best_lap} minimizes the time spent on degraded tires where your car is most vulnerable to being overtaken.")
 
                 except FileNotFoundError:
-                    st.error("Model not found! Make sure to click 'Train Models Now' first.")
+                    st.error("Model not found. Reload the app so the startup bootstrap can finish.")
                 except Exception as e:
                     st.error(f"An error occurred during simulation: {e}")
 

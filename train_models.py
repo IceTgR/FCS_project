@@ -1,49 +1,37 @@
- # ML Model Training Section
-import streamlit as st
-import joblib
+# ML Model Training Section
 import os
+
 from data_preprocessing import get_preprocessed_datasets
 from ML_lap_times import train_dry_models
 from retrieve_data import fastf1_to_sql
 
-def train_models():
-        models_exist = (
-            os.path.exists('models/dry/rf_Monaco_Grand_Prix.pkl') and
-            os.path.exists('models/dry/rf_British_Grand_Prix.pkl')
-        )
-        
-        if models_exist:
-            st.success("✅ ML Models already trained and saved!")
-        else:
-            st.info("No trained models found. Click the button below to train them.")
-        
-        if st.button('🚀 Train Models Now', key='train_button'):
-            try:
-                # Step 1: Check if database exists, create if not
-                if not os.path.exists('f1_project.db'):
-                    st.info("📥 Database not found. Creating database from F1 API...")
-                    with st.spinner('Downloading F1 data from fastf1 (this may take a few minutes)...'):
-                        # Define years and tracks for data retrieval
-                        years = range(2018, 2026) # 2018-2025
-                        track_list = ['Monaco Grand Prix', 'British Grand Prix']
-                        team_list = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
-                        fastf1_to_sql(years, track_list, team_list)
-                    st.success("✅ Database created successfully!")
-                st.rerun()
-                # Step 2: Load and preprocess data
-                with st.spinner('Loading data...'):
-                    df_dry, df_wet = get_preprocessed_datasets()
-                
-                # Step 3: Train models
-                with st.spinner('Training models (this may take a minute)...'):
-                    results = train_dry_models(df_dry)
-                
-                st.success("✅ Models trained and saved successfully!")
-                st.write("**Results (MAE in seconds):**")
-                for track, mae in results.items():
-                    st.write(f"  • {track}: {mae:.3f}s")
-                
-            except FileNotFoundError as e:
-                st.error(f"❌ Error: {e}")
-            except Exception as e:
-                st.error(f"❌ Training failed: {e}")
+DB_PATH = 'f1_project.db'
+TRACK_LIST = ['Monaco Grand Prix', 'British Grand Prix']
+TEAM_LIST = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
+MODEL_PATHS = [f"models/dry/rf_{track.replace(' ', '_')}.pkl" for track in TRACK_LIST]
+
+
+def models_exist():
+    return all(os.path.exists(path) for path in MODEL_PATHS)
+
+
+def ensure_ml_assets():
+    """Create the database and train the ML models if they are missing."""
+    status = {
+        'created_db': False,
+        'trained_models': False,
+        'results': None,
+    }
+
+    if not os.path.exists(DB_PATH):
+        years = range(2018, 2026)
+        fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
+        status['created_db'] = True
+
+    if status['created_db'] or not models_exist():
+        df_dry, _ = get_preprocessed_datasets()
+        results = train_dry_models(df_dry)
+        status['trained_models'] = True
+        status['results'] = results
+
+    return status

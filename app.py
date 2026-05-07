@@ -55,11 +55,19 @@ if 'ml_bootstrap_done' not in st.session_state:
     # Falls Rate-Limit auftrat, den User informieren
     if bootstrap_status.get('rate_limited'):
         wait_s = bootstrap_status.get('rate_limit_wait', 0)
-        if wait_s >= 60:
+        if wait_s >= 3600:
+            wait_text = f"ca. {wait_s // 3600} Stunde(n)"
+        elif wait_s >= 60:
             wait_text = f"ca. {wait_s//60} Minuten"
-        else:
+        elif wait_s > 0:
             wait_text = f"ca. {wait_s} Sekunden"
-        st.warning(f"Rate-Limit erreicht beim Laden externer Daten — das Laden wurde verlangsamt ({wait_text}). Bitte habe Geduld.")
+        else:
+            wait_text = "die genaue Wartezeit ist unbekannt"
+        st.warning(
+            "Rate-Limit erreicht beim Laden externer Daten. "
+            f"Das Bootstrapping läuft weiter, aber es kann {wait_text} dauern. "
+            "Im schlimmsten Fall kann FastF1 bis zu etwa 1 Stunde blockieren."
+        )
 
     # Ausgabe der MAE-Ergebnisse explizit in die Konsole/Terminal
     try:

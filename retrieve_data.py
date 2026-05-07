@@ -3,91 +3,144 @@ import sqlite3
 import pandas as pd
 import os
 import time
-from collections import deque
+import re
 from fastf1.req import RateLimitExceededError
 
-
-# einfache in-memory Rate-Limiter (burst + hourly)
-_REQ_SEC = deque()
-_REQ_HOUR = deque()
 _RATE_LIMITED_OCCURRED = False
 _MAX_WAIT_SECONDS = 0
 
 
-def _wait_for_rate_limit(progress_callback=None):
-    now = time.time()
-    global _RATE_LIMITED_OCCURRED, _MAX_WAIT_SECONDS
-    # clean old timestamps
-    while _REQ_SEC and _REQ_SEC[0] <= now - 1:
-        _REQ_SEC.popleft()
-    while _REQ_HOUR and _REQ_HOUR[0] <= now - 3600:
-        _REQ_HOUR.popleft()
-    # Burst: max 4 req per second
-    if len(_REQ_SEC) >= 4:
-        sleep = 1 - (now - _REQ_SEC[0])
-        wait = max(0.25, sleep)
-        # mark rate-limited (burst)
-        _RATE_LIMITED_OCCURRED = True
-        _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
-        msg = f"Rate limit (burst) erreicht — warte ca. {wait:.1f}s"
-        print(msg)
+def _format_wait_seconds(wait_seconds):
+    wait_seconds = max(0, int(round(wait_seconds)))
+    if wait_seconds >= 3600:
+        hours = wait_seconds // 3600
+        minutes = (wait_seconds % 3600) // 60
+        if minutes:
+            return f"ca. {hours}h {minutes}m"
+        return f"ca. {hours}h"
+    if wait_seconds >= 60:
+        minutes = wait_seconds // 60
+        seconds = wait_seconds % 60
+        if seconds:
+            return f"ca. {minutes}m {seconds}s"
+        return f"ca. {minutes}m"
+    return f"ca. {wait_seconds}s"
+
+
+def _extract_retry_after_seconds(exc):
+    for attr in ('retry_after', 'retry_after_seconds', 'wait_seconds', 'retry_after_sec'):
+        value = getattr(exc, attr, None)
+        if value is not None:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                pass
+
+    response = getattr(exc, 'response', None)
+    headers = getattr(response, 'headers', None) if response is not None else None
+    if headers:
+        retry_after = headers.get('Retry-After') or headers.get('retry-after')
+        if retry_after is not None:
+            try:
+                return float(retry_after)
+            except (TypeError, ValueError):
+                pass
+
+    message = ' '.join(str(arg) for arg in getattr(exc, 'args', ()) if arg)
+    seconds_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds)', message, re.IGNORECASE)
+    if seconds_match:
+        return float(seconds_match.group(1))
+    minutes_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)', message, re.IGNORECASE)
+    if minutes_match:
+        return float(minutes_match.group(1)) * 60
+
+    return None
+
+
+def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
+    global _MAX_WAIT_SECONDS
+    wait_seconds = max(0, float(wait_seconds))
+    if wait_seconds <= 0:
+        return
+
+    _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait_seconds)
+    remaining = wait_seconds
+    while remaining > 0:
+        if remaining >= 3600:
+            chunk = min(300, remaining)
+        elif remaining >= 600:
+            chunk = min(120, remaining)
+        elif remaining >= 120:
+            chunk = min(60, remaining)
+        elif remaining >= 30:
+            chunk = min(15, remaining)
+        else:
+            chunk = min(5, remaining)
+
+        message = f"{prefix} Noch {_format_wait_seconds(remaining)} warten."
+        print(message)
         if progress_callback:
             try:
-                progress_callback(msg)
+                progress_callback(message)
             except Exception:
                 pass
-        time.sleep(wait)
-        return _wait_for_rate_limit(progress_callback)
-    # Sustained: max 500 per hour
-    if len(_REQ_HOUR) >= 500:
-        sleep = _REQ_HOUR[0] + 3600 - now
-        wait = max(1, sleep)
-        # mark rate-limited (sustained)
-        _RATE_LIMITED_OCCURRED = True
-        _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
-        msg = f"Rate limit (sustained) erreicht — warte ca. {wait:.0f}s (bis zu 1 Stunde möglich)"
-        print(msg)
-        if progress_callback:
-            try:
-                progress_callback(msg)
-            except Exception:
-                pass
-        time.sleep(wait)
-        return _wait_for_rate_limit(progress_callback)
-    _REQ_SEC.append(now)
-    _REQ_HOUR.append(now)
+
+        time.sleep(chunk)
+        remaining -= chunk
 
 
-def _safe_get_event_schedule(year, retries=5):
-    for attempt in range(retries):
+def _call_fastf1_with_retry(description, func, progress_callback=None):
+    transient_attempts = 0
+    while True:
         try:
-            _wait_for_rate_limit()
-            return fastf1.get_event_schedule(year)
-        except RateLimitExceededError:
-            time.sleep(2 ** attempt)
-        except Exception:
-            time.sleep(1)
-    raise
+            return func()
+        except RateLimitExceededError as exc:
+            global _RATE_LIMITED_OCCURRED
+            _RATE_LIMITED_OCCURRED = True
 
+            wait_seconds = _extract_retry_after_seconds(exc)
+            if wait_seconds is None:
+                wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
+                message = (
+                    f"FastF1-Rate-Limit erreicht beim {description}. "
+                    f"Exakte Wartezeit unbekannt, ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. "
+                    "Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
+                )
+            else:
+                message = (
+                    f"FastF1-Rate-Limit erreicht beim {description}. "
+                    f"Ich warte {_format_wait_seconds(wait_seconds)} und versuche es erneut."
+                )
 
-def _safe_get_session(year, roundnum, typ, retries=5):
-    for attempt in range(retries):
-        try:
-            _wait_for_rate_limit()
-            return fastf1.get_session(year, roundnum, typ)
-        except RateLimitExceededError:
-            time.sleep(2 ** attempt)
+            print(message)
+            if progress_callback:
+                try:
+                    progress_callback(message)
+                except Exception:
+                    pass
+
+            _sleep_with_progress(wait_seconds, progress_callback, prefix=f"{description}:")
+            transient_attempts += 1
         except Exception:
-            time.sleep(1)
-    raise
+            transient_attempts += 1
+            if transient_attempts >= 3:
+                raise
+            wait_seconds = min(30, 5 * transient_attempts)
+            message = f"Fehler beim {description}. Wiederhole in {_format_wait_seconds(wait_seconds)}."
+            print(message)
+            if progress_callback:
+                try:
+                    progress_callback(message)
+                except Exception:
+                    pass
+            time.sleep(wait_seconds)
 
 
 def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
     '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''
 
     # Verzeichnis für Cache erstellen, damit die Daten lokal gespeichert werden und es somit schneller geht
-    if not os.path.exists('f1_cache'):
-        os.makedirs('f1_cache')
+    os.makedirs('f1_cache', exist_ok=True)
     fastf1.Cache.enable_cache('f1_cache')
 
     # Schreiben auf die SQLite DB vorbereiten
@@ -113,13 +166,17 @@ def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
 
     for year in years:
         try:
-            schedule = _safe_get_event_schedule(year)
+            schedule = _call_fastf1_with_retry(
+                f"den Rennkalender für {year} zu laden",
+                lambda: fastf1.get_event_schedule(year),
+                progress_callback=progress_callback,
+            )
         except Exception as e:
             print(f"Fehler beim Laden des Rennkalenders für {year}: {e}")
             continue
 
-        # Filtern der Rennstrecken, Benutzung von str.contains für flexible Suche
-        filtered_events = schedule[schedule['EventName'].str.contains('|'.join(track_list), case=False)]
+        # Nur die Events laden, die später auch für Training und Vorhersage genutzt werden.
+        filtered_events = schedule[schedule['EventName'].isin(track_list)]
 
         for _, event in filtered_events.iterrows():
             track_name = event['EventName']
@@ -131,27 +188,37 @@ def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
 
             try:
                 print(f"Lade {year} {track_name}...")
-                session = _safe_get_session(year, event['RoundNumber'], 'R')
+                session = _call_fastf1_with_retry(
+                    f"die Session {year} {track_name} zu laden",
+                    lambda: fastf1.get_session(year, event['RoundNumber'], 'R'),
+                    progress_callback=progress_callback,
+                )
 
-                # Laden der Runden- und Wetterdaten und Messages, keine Telemetrie für schnellere Verarbeitung
-                # pass progress callback into rate limiter via _wait_for_rate_limit calls
-                session.load(laps=True, telemetry=False, weather=True, messages=True)
+                # Nur die Daten laden, die nachher im ML-Training wirklich verwendet werden.
+                session.load(laps=True, telemetry=False, weather=True, messages=False)
 
-                laps = session.laps.pick_teams(team_list).copy()
+                required_lap_columns = ['LapNumber', 'LapTime', 'Compound', 'TyreLife', 'PitOutTime', 'PitInTime', 'Team', 'Time']
+                laps = session.laps.pick_teams(team_list)[required_lap_columns].copy()
                 if laps.empty:
                     print(f"Keine Laps für Teams: {year} {track_name}")
                     continue
 
-                weather = session.weather_data
+                weather = session.weather_data[['Time', 'AirTemp', 'Rainfall']].copy()
                 weather['Time'] = weather['Time'].dt.total_seconds() # Wir runden die Zeitstempel, um sie mit den Laps zu matchen
+                weather_seconds = weather['Time'].to_numpy()
+                rain_flags = weather['Rainfall'].fillna(0).to_numpy()
 
                 # Hilfsfunktion: Gab es Regen während dieser Runde?
                 def check_rain(lap_row):
                     """Prüft, ob während der Runde Regen auftrat."""
-                    start = lap_row['Time'].total_seconds() - lap_row['LapTime'].total_seconds()
+                    if pd.isna(lap_row['Time']) or pd.isna(lap_row['LapTime']):
+                        return 0
+
                     end = lap_row['Time'].total_seconds()
-                    rain_in_lap = weather[(weather['Time'] >= start) & (weather['Time'] <= end)]['Rainfall']
-                    return 1 if rain_in_lap.any() else 0
+                    start = end - lap_row['LapTime'].total_seconds()
+                    start_idx = weather_seconds.searchsorted(start, side='left')
+                    end_idx = weather_seconds.searchsorted(end, side='right')
+                    return 1 if rain_flags[start_idx:end_idx].any() else 0
 
                 # Zeit in Sekunden umwandeln
                 laps['LapTimeSec'] = laps['LapTime'].dt.total_seconds()
@@ -183,5 +250,5 @@ def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
     # Rückgabe-Status über Rate-Limit-Ereignisse
     return {
         'rate_limited': bool(_RATE_LIMITED_OCCURRED),
-        'max_wait_seconds': int(_MAX_WAIT_SECONDS)
+        'max_wait_seconds': int(round(_MAX_WAIT_SECONDS))
     }

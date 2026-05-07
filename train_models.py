@@ -46,7 +46,6 @@ def ensure_ml_assets(progress_callback=None):
         years = range(2018, current_year + 1)
         ret = fastf1_to_sql(years, TRACK_LIST, TEAM_LIST, progress_callback=progress_callback)
         status['created_db'] = True
-        # rate-limit info propagation
         if isinstance(ret, dict):
             status['rate_limited'] = ret.get('rate_limited', False)
             status['rate_limit_wait'] = ret.get('max_wait_seconds', 0)

@@ -70,26 +70,30 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
 @st.cache_data
 def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
     """Findet optimale Boxenstopp-Runde durch Vergleich aller möglichen Strategien."""
-    # 1. Berechne ALLE möglichen Rundenzeiten für beide Reifen im Voraus
-    time_on_start_tire = []
-    time_on_target_tire = []
     
-    for lap in range(1, total_laps + 1):
-        time_on_start_tire.append(predict_lap_time(track_name, team, start_compound, lap, air_temp))
-        time_on_target_tire.append(predict_lap_time(track_name, team, next_compound, lap, air_temp))
+    # Modell und Spalten einmal laden
+    try:
+        model, train_cols = load_track_model(track_name, "dry")
+    except FileNotFoundError:
+        return total_laps // 2  # Fallback, falls kein Modell existiert
         
     best_total_time = float('inf')
     best_lap = 0
 
-    # 2. Vergleiche alle möglichen Boxenstopp-Runden
+    # Vergleiche alle möglichen Boxenstopp-Runden
     for pit_lap in range(10, total_laps - 5):
-        # Stint 1: Runde 1 bis Boxenstopp mit Startreifen
-        stint_1_time = sum(time_on_start_tire[:pit_lap - 1])
-        # Stint 2: Nach Boxenstopp bis Ende mit Zielreifen
-        stint_2_time = sum(time_on_target_tire[pit_lap - 1:])
         
-        # Gesamtzeit = Stint 1 + Stint 2 + Boxenstopp-Zeit
-        total_race_time = stint_1_time + stint_2_time + 22.0
+        # Nutze deine korrekte Simulations-Funktion, die das Reifenalter auf 1 zurücksetzt
+        total_race_time = simulate_race_time(
+            model=model, 
+            train_cols=train_cols, 
+            total_laps=total_laps, 
+            team=team, 
+            start_compound=start_compound, 
+            next_compound=next_compound, 
+            pit_lap=pit_lap, 
+            air_temp=air_temp
+        )
         
         if total_race_time < best_total_time:
             best_total_time = total_race_time

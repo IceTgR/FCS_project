@@ -208,25 +208,25 @@ class Car:
         """
         wear_profiles = {
             'SOFT': {
-                'threshold': 8,
-                'quadratic': 0.015,
-                'linear': 0.08,
-                'random_low': 0.96,
-                'random_high': 1.04,
-            },
-            'MEDIUM': {
-                'threshold': 12,
-                'quadratic': 0.012,
-                'linear': 0.06,
+                'threshold': 10,
+                'quadratic': 0.007,
+                'linear': 0.04,
                 'random_low': 0.97,
                 'random_high': 1.03,
             },
-            'HARD': {
-                'threshold': 18,
-                'quadratic': 0.008,
-                'linear': 0.04,
+            'MEDIUM': {
+                'threshold': 15,
+                'quadratic': 0.005,
+                'linear': 0.03,
                 'random_low': 0.98,
                 'random_high': 1.02,
+            },
+            'HARD': {
+                'threshold': 22,
+                'quadratic': 0.003,
+                'linear': 0.02,
+                'random_low': 0.99,
+                'random_high': 1.01,
             },
         }
         # Nutze direkt die aktuelle Reifenmischung.

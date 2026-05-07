@@ -190,12 +190,19 @@ def advance_opponents(opponents, total_laps, safety_event_status, lap_multiplier
         car.predict_lap_time(air_temp=air_temp)
         car.lap_time *= lap_multiplier
 
+        # Kleine Zufallsvarianz simuliert Verkehr, kleine Fehler, Track-Evolution.
+        car.lap_time += random.uniform(-0.3, 0.3)
+
         planned_stop = car.pitstop_counter == 0 and car.lap == opponent.pit_lap
+        reactive_stop = car.pitstop_counter == 0 and car.tire_wear_penalty() > 1.5
         event_stop = _should_take_event_stop(opponent, safety_event_status)
 
-        if planned_stop or event_stop:
+        if planned_stop or reactive_stop or event_stop:
             # Erst der normale Stopp, zusätzlich bei SC/VSC ein möglicher Bonus-Stop.
-            new_tire = opponent.next_compound if planned_stop else _event_stop_compound(car.tire)
+            if planned_stop or reactive_stop:
+                new_tire = opponent.next_compound
+            else:
+                new_tire = _event_stop_compound(car.tire)
             car.box(
                 new_tire,
                 safety_event_status,

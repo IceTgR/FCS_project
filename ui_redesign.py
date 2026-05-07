@@ -50,6 +50,71 @@ TIRE_LABELS  = {"SOFT": "S",      "MEDIUM": "M",       "HARD": "H"}
 TRACKS = list(TRACK_LAP_COUNTS.keys())
 
 
+# ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
+
+def _fmt_time(seconds: float) -> str:
+    """Formatiert Sekunden als M:SS.mmm (z.B. 1:32.300)."""
+    if not seconds or seconds <= 0:
+        return "–"
+    m = int(seconds // 60)
+    s = seconds % 60
+    return f"{m}:{s:06.3f}"
+
+
+def _calculate_position(player, opponents) -> int:
+    """Berechnet aktuelle Position des Spielers anhand der Gesamtzeiten."""
+    ahead = sum(1 for opp in opponents if opp.car.total_time < player.total_time)
+    return ahead + 1
+
+
+def _build_live_standings(player, opponents) -> pd.DataFrame:
+    """Erstellt Live-Rangliste mit Spieler + Gegnern, sortiert nach Gesamtzeit."""
+    rows = []
+
+    # Spieler
+    p_last = player.race_history[-1]["Rundenzeit"] if player.race_history else player.lap_time
+    rows.append({
+        "team_display": f"► {player.team}",
+        "tire": player.tire,
+        "tire_age": player.tire_age,
+        "last_lap": p_last,
+        "pit_stops": player.pitstop_counter,
+        "total": player.total_time,
+    })
+
+    # Gegner
+    for opp in opponents:
+        car = opp.car
+        last = car.race_history[-1]["Rundenzeit"] if car.race_history else car.lap_time
+        rows.append({
+            "team_display": opp.team,
+            "tire": car.tire,
+            "tire_age": car.tire_age,
+            "last_lap": last,
+            "pit_stops": car.pitstop_counter,
+            "total": car.total_time,
+        })
+
+    rows.sort(key=lambda r: r["total"])
+
+    result = []
+    prev_total = None
+    for i, r in enumerate(rows):
+        delta = "–" if prev_total is None else f"+{r['total'] - prev_total:.3f}s"
+        prev_total = r["total"]
+        result.append({
+            "Rang": i + 1,
+            "Team": r["team_display"],
+            "Reifen": r["tire"],
+            "Alter": r["tire_age"],
+            "Letzte Runde": _fmt_time(r["last_lap"]),
+            "Stops": r["pit_stops"],
+            "Δ Vordermann": delta,
+        })
+
+    return pd.DataFrame(result)
+
+
 # ─── CSS ──────────────────────────────────────────────────────────────────────
 
 def inject_css():
@@ -180,6 +245,27 @@ def inject_css():
         vertical-align: middle;
     }
 
+    /* ── Reifenauswahl-Karte ── */
+    .tire-card {
+        border-radius: 8px;
+        padding: 0.7rem 0.4rem;
+        text-align: center;
+        margin-bottom: 0.4rem;
+        cursor: pointer;
+    }
+    .tire-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2.5px solid;
+        font-weight: 900;
+        font-size: 0.85rem;
+        margin: 0 auto 0.35rem;
+    }
+
     /* ── Safety-Car-Banner ── */
     .banner-sc {
         background: linear-gradient(90deg, #c45000, #ff7800);
@@ -300,7 +386,6 @@ def inject_css():
 # ─── Bootstrap-Hilfsfunktionen ────────────────────────────────────────────────
 
 def make_bootstrap_placeholder():
-    """Zeigt F1-Startbildschirm während des Bootstrappings."""
     ph = st.empty()
     ph.markdown("""
     <div style="min-height:75vh;display:flex;flex-direction:column;
@@ -324,7 +409,6 @@ def make_bootstrap_placeholder():
 
 
 def show_bootstrap_result(bootstrap_status):
-    """Zeigt kurze Statuskarte nach abgeschlossenem Bootstrap."""
     import os
     from train_models import TRACK_LIST
 
@@ -356,7 +440,6 @@ def show_bootstrap_result(bootstrap_status):
 # ─── Seite 1 — Einstellungen ──────────────────────────────────────────────────
 
 def _team_selector():
-    """Teamauswahl-Kacheln. Gibt ausgewählten Teamnamen zurück."""
     if "team_player" not in st.session_state:
         st.session_state.team_player = "Ferrari"
 
@@ -374,8 +457,7 @@ def _team_selector():
                 unsafe_allow_html=True,
             )
             if selected:
-                st.button("✓ Ausgewählt", key=f"tbtn_{team}", disabled=True,
-                          width='stretch')
+                st.button("✓ Ausgewählt", key=f"tbtn_{team}", disabled=True, width='stretch')
             else:
                 if st.button("Wählen", key=f"tbtn_{team}", width='stretch'):
                     st.session_state.team_player = team
@@ -384,8 +466,40 @@ def _team_selector():
     return st.session_state.team_player
 
 
+def _tire_selector(session_key: str, default: str = "SOFT") -> str:
+    """Visueller Reifenauswähler mit farbigen Badge-Karten."""
+    if session_key not in st.session_state:
+        st.session_state[session_key] = default
+
+    cols = st.columns(3)
+    for col, tire in zip(cols, ["SOFT", "MEDIUM", "HARD"]):
+        color = TIRE_COLORS[tire]
+        lbl   = TIRE_LABELS[tire]
+        selected = st.session_state[session_key] == tire
+        border = f"2px solid {color}" if selected else "2px solid #2a2a2a"
+        glow   = f"box-shadow:0 0 10px {color}44;" if selected else ""
+        bg     = "#1a1a1a" if selected else "#111111"
+
+        with col:
+            st.markdown(f"""
+            <div class="tire-card" style="border:{border};background:{bg};{glow}">
+                <div class="tire-icon" style="color:{color};border-color:{color};">{lbl}</div>
+                <div style="color:{color};font-size:0.72rem;font-weight:700;letter-spacing:1px;">
+                    {tire}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if selected:
+                st.button("✓", key=f"{session_key}_btn_{tire}", disabled=True, width='stretch')
+            else:
+                if st.button("Wählen", key=f"{session_key}_btn_{tire}", width='stretch'):
+                    st.session_state[session_key] = tire
+                    st.rerun()
+
+    return st.session_state[session_key]
+
+
 def render_setup_page():
-    """Rennkonfigurationsseite."""
     # Kopfzeile
     st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
     st.markdown('<div class="f1-eyebrow">Race Strategy Simulator</div>', unsafe_allow_html=True)
@@ -393,22 +507,17 @@ def render_setup_page():
     st.markdown('<div class="f1-sub">Triff die richtigen Entscheidungen. Schlage die Konkurrenz. Führe dein Team zum Sieg.</div>', unsafe_allow_html=True)
     st.markdown("---")
 
-    # Teamauswahl
     team = _team_selector()
     st.markdown("---")
 
-    # Rennparameter
     st.markdown('<div class="section-label">RENNPARAMETER</div>', unsafe_allow_html=True)
 
-    col_track, col_start, col_target, col_temp = st.columns([2, 1, 1, 1])
+    col_track, col_start, col_temp = st.columns([2, 1.5, 1])
 
     with col_track:
         st.markdown('<div class="section-label">STRECKE WÄHLEN</div>', unsafe_allow_html=True)
-        # Widget-Key "track_select" ist bewusst ANDERS als der persistierte Key "track",
-        # damit kein Konflikt zwischen Widget-Verwaltung und manuellem Setzen entsteht.
         track = st.selectbox(
-            "Strecke",
-            TRACKS,
+            "Strecke", TRACKS,
             format_func=lambda t: f"{TRACK_FLAGS.get(t, '')} {t}",
             label_visibility="collapsed",
             key="track_select",
@@ -418,17 +527,7 @@ def render_setup_page():
 
     with col_start:
         st.markdown('<div class="section-label">STARTREIFEN</div>', unsafe_allow_html=True)
-        tire_start = st.radio(
-            "Startreifen", ["SOFT", "MEDIUM", "HARD"],
-            label_visibility="collapsed", key="start_tire",
-        )
-
-    with col_target:
-        st.markdown('<div class="section-label">ZIELREIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
-        target_tire = st.radio(
-            "Zielreifen", ["SOFT", "MEDIUM", "HARD"],
-            index=2, label_visibility="collapsed", key="target_tire",
-        )
+        tire_start = _tire_selector("start_tire_sel", default="SOFT")
 
     with col_temp:
         st.markdown('<div class="section-label">LUFTTEMPERATUR</div>', unsafe_allow_html=True)
@@ -445,23 +544,23 @@ def render_setup_page():
 
     st.markdown("---")
 
-    # KI-Stratege Briefing
+    # KI-Stratege Briefing — Zielreifen ist hier integriert, da er nur dafür benötigt wird
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
     with st.expander("🏎  KI nach optimalem Boxenstoppfenster fragen", expanded=True):
         st.markdown(
-            '<div class="f1-sub">Lass die KI Rundenzeiten mit verschiedenen Reifenmischungen simulieren, um deine mathematisch schnellste Strategie zu finden.</div>',
+            '<div class="f1-sub">Wähle den Zielreifen und lass die KI die mathematisch schnellste Strategie berechnen.</div>',
             unsafe_allow_html=True,
         )
+        st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
+        target_tire = _tire_selector("target_tire_sel", default="HARD")
+
         if st.button("Optimale Boxenstopprunde berechnen", width='stretch'):
             with st.spinner("Strategie wird simuliert…"):
                 try:
                     best_lap = find_optimal_pit_lap(
-                        track_name=track,
-                        total_laps=laps,
-                        team=team,
-                        start_compound=tire_start,
-                        next_compound=target_tire,
+                        track_name=track, total_laps=laps, team=team,
+                        start_compound=tire_start, next_compound=target_tire,
                         air_temp=air_temp,
                     )
                     st.success(
@@ -469,48 +568,34 @@ def render_setup_page():
                         f"{tire_start} → {target_tire}"
                     )
                     if team in ("Red Bull", "Mercedes"):
-                        st.info(
-                            f"{team} zeigt historisch starkes Reifenmanagement. Die KI empfiehlt, "
-                            f"bis Runde {best_lap} zu fahren, da das Auto das Tempo auch auf "
-                            f"verschlissenen Reifen hält."
-                        )
+                        st.info(f"{team} zeigt starkes Reifenmanagement. Die KI empfiehlt, bis Runde {best_lap} zu fahren.")
                     elif team in ("Ferrari", "McLaren"):
-                        st.info(
-                            f"{team} erreicht früh seinen Höchstleistung, fällt aber schneller ab. "
-                            f"Ein Boxenstopp in Runde {best_lap} vermeidet die Klippe, "
-                            f"wo die {tire_start}-Reifen stark nachlassen."
-                        )
+                        st.info(f"{team} erreicht früh seinen Höchstleistung. Boxenstopp in Runde {best_lap} verhindert den Leistungsabfall.")
                     else:
-                        st.info(
-                            f"Für {team} minimiert Runde {best_lap} die Zeit auf verschlissenen "
-                            f"Reifen und schützt gleichzeitig die Streckenposition."
-                        )
+                        st.info(f"Für {team} minimiert Runde {best_lap} die Zeit auf verschlissenen Reifen.")
                 except FileNotFoundError:
-                    st.error("Modell nicht gefunden — App neu starten, um das Bootstrap abzuschließen.")
+                    st.error("Modell nicht gefunden — App neu starten.")
                 except Exception as exc:
                     st.error(f"Simulationsfehler: {exc}")
 
     st.markdown("---")
 
     if st.button("🏁  SIMULATION STARTEN", type="primary", width='stretch'):
-        # Werte explizit in einfache Session-State-Keys schreiben (nicht widget-verwaltet),
-        # damit sie auf der Rennseite verfügbar bleiben wenn die Widgets nicht mehr rendern.
-        st.session_state.track = track
+        st.session_state.track    = track
         st.session_state.air_temp = air_temp
         st.session_state.race_started = True
-        st.session_state.player = Car(team, track, tire_start)
+        st.session_state.player   = Car(team, track, tire_start)
         st.session_state.total_laps = laps
-        st.session_state.opponents = create_opponents(team, track, laps)
+        st.session_state.opponents  = create_opponents(team, track, laps)
         st.rerun()
 
 
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
 
 def _tire_html(compound, age=None):
-    """Gibt ein inline-HTML-Reifenabzeichen zurück."""
     c   = TIRE_COLORS.get(compound, "#fff")
     lbl = TIRE_LABELS.get(compound, compound[0])
-    age_str = f"&nbsp;·&nbsp;{age} Runden" if age is not None else ""
+    age_str = f"&nbsp;·&nbsp;{age} Rdn." if age is not None else ""
     return (
         f'<span class="tire-badge" style="color:{c};border-color:{c};">{lbl}</span>'
         f'&nbsp;<span style="color:{c};font-weight:700;">{compound}</span>'
@@ -557,8 +642,7 @@ def _do_pit(player, total_laps):
     st.rerun(scope="app")
 
 
-def _race_summary(player, total_laps):
-    """Ergebnisanzeige nach Rennende."""
+def _race_summary(player, total_laps, opponents):
     history = player.race_history
     total_s = player.total_time
     m   = int(total_s // 60)
@@ -574,11 +658,11 @@ def _race_summary(player, total_laps):
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.6rem;">
                 <div class="metric-tile">
                     <div class="mlabel">GESAMTZEIT</div>
-                    <div class="mval" style="font-size:1.25rem;">{m}:{s:05.2f}</div>
+                    <div class="mval" style="font-size:1.1rem;">{m}:{s:05.2f}</div>
                 </div>
                 <div class="metric-tile">
                     <div class="mlabel">Ø RUNDENZEIT</div>
-                    <div class="mval" style="font-size:1.25rem;">{avg:.2f}s</div>
+                    <div class="mval" style="font-size:1.1rem;">{_fmt_time(avg)}</div>
                 </div>
                 <div class="metric-tile">
                     <div class="mlabel">BOXENSTOPPS</div>
@@ -586,7 +670,7 @@ def _race_summary(player, total_laps):
                 </div>
                 <div class="metric-tile">
                     <div class="mlabel">BESTE RUNDE</div>
-                    <div class="mval" style="font-size:1.25rem;">{best:.2f}s</div>
+                    <div class="mval" style="font-size:1.1rem;">{_fmt_time(best)}</div>
                 </div>
             </div>
         </div>
@@ -595,31 +679,28 @@ def _race_summary(player, total_laps):
     with col_chart:
         if history:
             df = pd.DataFrame(history)
+            df["Kumulative Zeit"] = df["Rundenzeit"].cumsum()
             st.markdown('<div class="section-label">RUNDENZEITENENTWICKLUNG</div>', unsafe_allow_html=True)
-            st.line_chart(df.set_index("Runde")["Rundenzeit"], color="#e10600", height=220)
+            st.area_chart(df.set_index("Runde")["Kumulative Zeit"], color="#e10600", height=220)
 
-    if history:
-        st.markdown('<div class="section-label" style="margin-top:0.5rem;">VOLLSTÄNDIGER RUNDENVERLAUF</div>', unsafe_allow_html=True)
-        hist_df = pd.DataFrame(
-            history, columns=["Runde", "Rundenzeit", "Reifen", "Reifenalter", "Kommentar"]
-        )
-        st.dataframe(hist_df, width='stretch', hide_index=True)
+    # Endrangliste
+    st.markdown('<div class="section-label" style="margin-top:0.5rem;">ENDRANGLISTE</div>', unsafe_allow_html=True)
+    st.dataframe(_build_live_standings(player, opponents), width='stretch', hide_index=True)
 
-    opponents = st.session_state.get("opponents")
-    if opponents:
-        st.markdown('<div class="section-label" style="margin-top:0.5rem;">ENDFELD</div>', unsafe_allow_html=True)
-        st.dataframe(
-            pd.DataFrame(build_opponent_table(opponents, total_laps)),
-            width='stretch', hide_index=True,
-        )
+    # Vollständiger Rundenverlauf (eingeklappt)
+    with st.expander("Vollständiger Rundenverlauf", expanded=False):
+        if history:
+            hist_df = pd.DataFrame(history, columns=["Runde", "Rundenzeit", "Reifen", "Reifenalter", "Kommentar"])
+            hist_df["Rundenzeit"] = hist_df["Rundenzeit"].apply(_fmt_time)
+            st.dataframe(hist_df, width='stretch', hide_index=True)
 
 
 @st.fragment(run_every=1)
 def _race_fragment():
     player     = st.session_state.player
     total_laps = st.session_state.total_laps
+    opponents  = st.session_state.get("opponents", [])
     event      = st.session_state.get("safety_event_status")
-    # "track" und "air_temp" wurden beim Rennstart explizit als einfache Keys gespeichert.
     track      = st.session_state.track
     air_temp   = st.session_state.air_temp
 
@@ -632,19 +713,13 @@ def _race_fragment():
     # Rennende
     if player.lap == total_laps + 1:
         if player.pitstop_counter == 0:
-            st.markdown(
-                '<div class="banner-dsq">❌&nbsp; DISQUALIFIZIERT — Kein Boxenstopp absolviert</div>',
-                unsafe_allow_html=True,
-            )
+            st.markdown('<div class="banner-dsq">❌&nbsp; DISQUALIFIZIERT — Kein Boxenstopp absolviert</div>', unsafe_allow_html=True)
         else:
-            st.markdown(
-                '<div class="banner-end">🏁&nbsp; RENNEN BEENDET — Glückwunsch!</div>',
-                unsafe_allow_html=True,
-            )
-        _race_summary(player, total_laps)
+            st.markdown('<div class="banner-end">🏁&nbsp; RENNEN BEENDET — Glückwunsch!</div>', unsafe_allow_html=True)
+        _race_summary(player, total_laps, opponents)
         return
 
-    # Rundenzeit für diese Runde berechnen
+    # Rundenzeit berechnen
     player.predict_lap_time(air_temp=air_temp)
 
     # Rundentimer
@@ -654,17 +729,15 @@ def _race_fragment():
         st.session_state.lap_started_for = current_lap
 
     elapsed   = time.time() - st.session_state.lap_start_time
-    timeout   = 5.0
-    remaining = max(0.0, timeout - elapsed)
+    remaining = max(0.0, 5.0 - elapsed)
 
-    # Auto-Weiterschaltung
     if remaining <= 0:
         roll_safety_event()
         apply_safety_event_effect(player)
         player.advance_lap(st.session_state.safety_event_status)
-        if hasattr(st.session_state, "opponents"):
+        if opponents:
             advance_opponents(
-                st.session_state.opponents, total_laps,
+                opponents, total_laps,
                 st.session_state.safety_event_status,
                 get_safety_event_lap_multiplier(),
                 get_safety_event_pitstop_multiplier(),
@@ -677,7 +750,7 @@ def _race_fragment():
     # ── Zweispaltiges Layout ──────────────────────────────────────────────
     left, right = st.columns([1, 2], gap="medium")
 
-    # ── LINKS: Statuskacheln + Steuerung ─────────────────────────────────
+    # ── LINKS: Statuskacheln + Pitstop-Steuerung ─────────────────────────
     with left:
         st.markdown(f"""
         <div class="metric-tile">
@@ -711,8 +784,10 @@ def _race_fragment():
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown('<div class="section-label" style="margin-top:0.25rem;">BOXENSTRATEGIE</div>', unsafe_allow_html=True)
+        # Countdown ÜBER dem Pitstop-Label
         st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
+
+        st.markdown('<div class="section-label">PITSTOP</div>', unsafe_allow_html=True)
 
         st.radio(
             "Reifen für Boxenstopp:",
@@ -731,56 +806,79 @@ def _race_fragment():
 
     # ── RECHTS: Datenpanels ───────────────────────────────────────────────
     with right:
+        # Obere Metrik-Reihe: Letzte Runde | Platz | Team
+        pos = _calculate_position(player, opponents)
+        team_color = TEAM_COLORS.get(player.team, "#e10600")
+
         if player.lap > 1:
             last = player.race_history[-1]["Rundenzeit"]
             prev = player.race_history[-2]["Rundenzeit"] if player.lap > 2 else None
+            delta_color, delta_str = "#555", ""
             if prev is not None:
                 diff = last - prev
                 delta_color = "#00cc66" if diff < 0 else "#ff4444"
                 delta_str   = f"{diff:+.3f}s"
-            else:
-                delta_color, delta_str = "#555", ""
 
-            st.markdown(f"""
-            <div class="metric-tile" style="text-align:left;padding:1rem 1.25rem;">
-                <div class="mlabel">LETZTE RUNDENZEIT</div>
-                <div class="mval">{last:.3f}<span style="font-size:1rem;color:#444;">s</span>
-                    &nbsp;<span style="font-size:0.85rem;color:{delta_color};">{delta_str}</span>
+            m1, m2, m3 = st.columns([2, 1, 1])
+            with m1:
+                st.markdown(f"""
+                <div class="metric-tile" style="text-align:left;padding:0.9rem 1.1rem;">
+                    <div class="mlabel">LETZTE RUNDENZEIT</div>
+                    <div class="mval" style="font-size:1.4rem;">{_fmt_time(last)}
+                        <span style="font-size:0.85rem;color:{delta_color};margin-left:6px;">{delta_str}</span>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            history_df = pd.DataFrame(player.race_history)
-            st.markdown('<div class="section-label" style="margin-top:0.25rem;">RUNDENZEITENENTWICKLUNG</div>', unsafe_allow_html=True)
-            st.line_chart(
-                history_df.set_index("Runde")["Rundenzeit"],
-                color="#e10600",
-                height=180,
-            )
+                """, unsafe_allow_html=True)
+            with m2:
+                st.markdown(f"""
+                <div class="metric-tile">
+                    <div class="mlabel">PLATZ</div>
+                    <div class="mval">P{pos}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with m3:
+                st.markdown(f"""
+                <div class="metric-tile">
+                    <div class="mlabel">TEAM</div>
+                    <div style="margin-top:0.3rem;">
+                        <span style="background:{team_color};color:#fff;font-weight:700;
+                              font-size:0.72rem;padding:3px 8px;border-radius:4px;
+                              letter-spacing:0.5px;">{player.team}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.markdown(
-                '<div class="f1-card"><div class="f1-sub">Der Rundenverlauf erscheint nach deiner ersten Runde.</div></div>',
+                '<div class="f1-card"><div class="f1-sub">Rundenzeiten erscheinen nach der ersten Runde.</div></div>',
                 unsafe_allow_html=True,
+            )
+
+        # Aufbauender Zeitverlauf-Graph (kumulative Gesamtzeit)
+        if player.lap > 1:
+            history_df = pd.DataFrame(player.race_history)
+            history_df["Kumulative Zeit"] = history_df["Rundenzeit"].cumsum()
+            st.markdown('<div class="section-label" style="margin-top:0.25rem;">ZEITVERLAUF (KUMULATIV)</div>', unsafe_allow_html=True)
+            st.area_chart(
+                history_df.set_index("Runde")["Kumulative Zeit"],
+                color="#e10600",
+                height=160,
             )
 
         # Live-KI-Stratege
         st.markdown('<div class="section-label">LIVE KI-STRATEGE</div>', unsafe_allow_html=True)
-        advisor_col, result_col = st.columns([1, 2])
-        with advisor_col:
+        adv_col, res_col = st.columns([1, 2])
+        with adv_col:
             live_target = st.selectbox(
                 "Strategie auswerten für:",
                 ["SOFT", "MEDIUM", "HARD"],
                 key="live_target_tire",
             )
-        with result_col:
+        with res_col:
             try:
                 best = find_optimal_pit_lap(
-                    track_name=track,
-                    total_laps=total_laps,
-                    team=player.team,
-                    start_compound=player.tire,
-                    next_compound=live_target,
-                    air_temp=air_temp,
+                    track_name=track, total_laps=total_laps,
+                    team=player.team, start_compound=player.tire,
+                    next_compound=live_target, air_temp=air_temp,
                 )
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.success(f"Boxenstopp in Runde **{best}** → {live_target}")
@@ -788,32 +886,32 @@ def _race_fragment():
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.warning(f"KI-Stratege Fehler: {_e}")
 
-    # ── Rundenverlauf ──────────────────────────────────────────────────────
-    if player.lap > 1:
-        st.markdown('<div class="section-label" style="margin-top:0.5rem;">RUNDENVERLAUF</div>', unsafe_allow_html=True)
-        hist = pd.DataFrame(
-            player.race_history,
-            columns=["Runde", "Rundenzeit", "Reifen", "Reifenalter", "Kommentar"],
-        )
-        st.dataframe(hist, width='stretch', hide_index=True)
+        # Live-Rangliste (Spieler + Gegner, nach Gesamtzeit sortiert)
+        st.markdown('<div class="section-label" style="margin-top:0.5rem;">LIVE-RANGLISTE</div>', unsafe_allow_html=True)
+        standings = _build_live_standings(player, opponents)
+        st.dataframe(standings, width='stretch', hide_index=True)
 
-    # ── Gegner ────────────────────────────────────────────────────────────
-    opponents = st.session_state.get("opponents")
-    if opponents:
-        st.markdown('<div class="section-label" style="margin-top:0.5rem;">GEGNER</div>', unsafe_allow_html=True)
-        opp_df = pd.DataFrame(build_opponent_table(opponents, total_laps))
-        st.dataframe(opp_df, width='stretch', hide_index=True)
+    # ── Rundenverlauf (eingeklappt, ganz unten) ───────────────────────────
+    with st.expander("Rundenverlauf", expanded=False):
+        if player.lap > 1:
+            hist = pd.DataFrame(
+                player.race_history,
+                columns=["Runde", "Rundenzeit", "Reifen", "Reifenalter", "Kommentar"],
+            )
+            hist["Rundenzeit"] = hist["Rundenzeit"].apply(_fmt_time)
+            st.dataframe(hist, width='stretch', hide_index=True)
+        else:
+            st.markdown('<div class="f1-sub">Noch keine Runden absolviert.</div>', unsafe_allow_html=True)
 
 
 def render_race_page():
-    """Rennseite: Kopfzeile + Fragment."""
     hdr_l, hdr_r = st.columns([4, 1])
     with hdr_l:
         st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
-        track  = st.session_state.get("track", "")
-        team   = st.session_state.player.team if "player" in st.session_state else ""
-        color  = TEAM_COLORS.get(team, "#e10600")
-        flag   = TRACK_FLAGS.get(track, "")
+        track = st.session_state.get("track", "")
+        team  = st.session_state.player.team if "player" in st.session_state else ""
+        color = TEAM_COLORS.get(team, "#e10600")
+        flag  = TRACK_FLAGS.get(track, "")
         st.markdown(
             f'<div class="f1-eyebrow">Rennen läuft</div>'
             f'<div style="font-size:1.35rem;font-weight:900;color:#fff;margin:0.1rem 0;">'
@@ -842,7 +940,6 @@ def render_race_page():
 # ─── App-Router ───────────────────────────────────────────────────────────────
 
 def render_app():
-    """Hauptfunktion — wird von app.py aufgerufen."""
     if st.session_state.get("race_started"):
         render_race_page()
     else:

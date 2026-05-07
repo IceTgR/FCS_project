@@ -27,34 +27,7 @@ def _format_wait_seconds(wait_seconds):
     return f"ca. {wait_seconds}s"
 
 
-def _extract_retry_after_seconds(exc):
-    for attr in ('retry_after', 'retry_after_seconds', 'wait_seconds', 'retry_after_sec'):
-        value = getattr(exc, attr, None)
-        if value is not None:
-            try:
-                return float(value)
-            except (TypeError, ValueError):
-                pass
 
-    response = getattr(exc, 'response', None)
-    headers = getattr(response, 'headers', None) if response is not None else None
-    if headers:
-        retry_after = headers.get('Retry-After') or headers.get('retry-after')
-        if retry_after is not None:
-            try:
-                return float(retry_after)
-            except (TypeError, ValueError):
-                pass
-
-    message = ' '.join(str(arg) for arg in getattr(exc, 'args', ()) if arg)
-    seconds_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds)', message, re.IGNORECASE)
-    if seconds_match:
-        return float(seconds_match.group(1))
-    minutes_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)', message, re.IGNORECASE)
-    if minutes_match:
-        return float(minutes_match.group(1)) * 60
-
-    return None
 
 
 def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
@@ -98,7 +71,8 @@ def _call_fastf1_with_retry(description, func, progress_callback=None):
             global _RATE_LIMITED_OCCURRED
             _RATE_LIMITED_OCCURRED = True
 
-            wait_seconds = _extract_retry_after_seconds(exc)
+            # FastF1 liefert die exakte Wartezeit nicht – wir verwenden ein exponentielles Backoff
+            wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
             context_msg = f"FastF1-Rate-Limit erreicht beim {description}."
             print(context_msg)
             if progress_callback:
@@ -107,12 +81,7 @@ def _call_fastf1_with_retry(description, func, progress_callback=None):
                 except Exception:
                     pass
 
-            if wait_seconds is None:
-                wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
-                detail_msg = f"Exakte Wartezeit unbekannt, ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
-            else:
-                detail_msg = f"Ich warte {_format_wait_seconds(wait_seconds)} und versuche es erneut."
-
+            detail_msg = f"Ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
             print(detail_msg)
             if progress_callback:
                 try:
@@ -123,18 +92,7 @@ def _call_fastf1_with_retry(description, func, progress_callback=None):
             _sleep_with_progress(wait_seconds, progress_callback, prefix="")
             transient_attempts += 1
         except Exception:
-            transient_attempts += 1
-            if transient_attempts >= 3:
-                raise
-            wait_seconds = min(30, 5 * transient_attempts)
-            message = f"Fehler beim {description}. Wiederhole in {_format_wait_seconds(wait_seconds)}."
-            print(message)
-            if progress_callback:
-                try:
-                    progress_callback(message)
-                except Exception:
-                    pass
-            time.sleep(wait_seconds)
+            raise
 
 
 def fastf1_to_sql(years, track_list, team_list, progress_callback=None):

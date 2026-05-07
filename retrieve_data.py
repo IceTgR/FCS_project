@@ -8,6 +8,7 @@ from fastf1.req import RateLimitExceededError
 
 _RATE_LIMITED_OCCURRED = False
 _MAX_WAIT_SECONDS = 0
+_RATE_LIMIT_RECOVERED_SIGNAL = '__FASTF1_RATE_LIMIT_RECOVERED__'
 
 
 def _format_wait_seconds(wait_seconds):
@@ -38,6 +39,7 @@ def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
 
     _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait_seconds)
     remaining = wait_seconds
+    last_callback_time = 0
     while remaining > 0:
         if remaining >= 3600:
             chunk = min(300, remaining)
@@ -50,11 +52,15 @@ def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
         else:
             chunk = min(5, remaining)
 
-        message = f"Geschätzte Wartezeit: {_format_wait_seconds(remaining)} (Im schlimmsten Fall kann dies bis zu 1h dauern)"
+        message = f"Wartezeit bis zum nächsten Retry: {_format_wait_seconds(remaining)} (Im schlimmsten Fall kann dies bis zu 1h dauern)"
         print(message)
-        if progress_callback:
+        
+        # Drossle Callback-Aufrufe — nur alle 30 Sekunden aktualisieren, um Streamlit nicht zu überlasten
+        now = time.time()
+        if progress_callback and (now - last_callback_time >= 30 or remaining <= 30):
             try:
                 progress_callback(message)
+                last_callback_time = now
             except Exception:
                 pass
 
@@ -64,25 +70,33 @@ def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
 
 def _call_fastf1_with_retry(description, func, progress_callback=None):
     transient_attempts = 0
+    rate_limited_once = False
     while True:
         try:
-            return func()
+            result = func()
+            if rate_limited_once and progress_callback:
+                try:
+                    progress_callback(_RATE_LIMIT_RECOVERED_SIGNAL)
+                except Exception:
+                    pass
+            return result
         except RateLimitExceededError as exc:
             global _RATE_LIMITED_OCCURRED
             _RATE_LIMITED_OCCURRED = True
+            rate_limited_once = True
 
             # FastF1 liefert die exakte Wartezeit nicht – wir verwenden ein exponentielles Backoff
             wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
-            context_msg = f"FastF1-Rate-Limit erreicht beim {description}."
-            print(context_msg)
+            context_msg = f"FastF1 API-Rate-Limit erreicht beim {description}."
+            print(f"[FastF1 RateLimitExceededError] {context_msg}")
             if progress_callback:
                 try:
                     progress_callback(context_msg)
                 except Exception:
                     pass
 
-            detail_msg = f"Ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
-            print(detail_msg)
+            detail_msg = f"Wartezeit bis zum nächsten Retry: {_format_wait_seconds(wait_seconds)} (Im schlimmsten Fall kann dies bis zu 1 Stunde dauern)."
+            print(f"[FastF1 RateLimitExceededError] {detail_msg}")
             if progress_callback:
                 try:
                     progress_callback(detail_msg)

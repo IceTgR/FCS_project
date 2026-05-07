@@ -18,9 +18,32 @@ if 'race_started' not in st.session_state:
 
 if 'ml_bootstrap_done' not in st.session_state:
     placeholder = st.empty()
+
+    def _render_bootstrap_warning():
+        context_msg = st.session_state.get('ml_bootstrap_rate_limit_context')
+        retry_msg = st.session_state.get('ml_bootstrap_rate_limit_retry')
+        if context_msg and retry_msg:
+            placeholder.warning(f"{context_msg}\n\n{retry_msg}")
+        elif context_msg:
+            placeholder.warning(context_msg)
+        elif retry_msg:
+            placeholder.warning(retry_msg)
+
     def _progress_cb(msg: str):
         try:
-            placeholder.warning(msg)
+            if msg == '__FASTF1_RATE_LIMIT_RECOVERED__':
+                st.session_state.ml_bootstrap_rate_limit_context = None
+                st.session_state.ml_bootstrap_rate_limit_retry = None
+                placeholder.empty()
+                return
+            if msg.startswith('FastF1 API-Rate-Limit erreicht beim '):
+                st.session_state.ml_bootstrap_rate_limit_context = msg
+                _render_bootstrap_warning()
+            elif msg.startswith('Wartezeit bis zum nächsten Retry: '):
+                st.session_state.ml_bootstrap_rate_limit_retry = msg
+                _render_bootstrap_warning()
+            else:
+                placeholder.warning(msg)
         except Exception:
             pass
 
@@ -33,6 +56,11 @@ if 'ml_bootstrap_done' not in st.session_state:
             st.session_state.ml_bootstrap_status = ensure_ml_assets()
 
     st.session_state.ml_bootstrap_done = True
+
+    # Leere die Ladewarnung, damit sie sofort verschwindet
+    placeholder.empty()
+    st.session_state.ml_bootstrap_rate_limit_context = None
+    st.session_state.ml_bootstrap_rate_limit_retry = None
 
     bootstrap_status = st.session_state.ml_bootstrap_status
     status_lines = []
@@ -64,8 +92,8 @@ if 'ml_bootstrap_done' not in st.session_state:
         else:
             wait_text = "die genaue Wartezeit ist unbekannt"
         st.warning(
-            "Rate-Limit erreicht beim Laden externer Daten. "
-            f"Das Bootstrapping läuft weiter, aber es kann {wait_text} dauern. "
+            "FastF1 API-Rate-Limit erreicht beim Laden externer Daten. "
+            f"Das Bootstrapping läuft weiter. Wartezeit bis zum nächsten Retry: {wait_text}. "
             "Im schlimmsten Fall kann FastF1 bis zu etwa 1 Stunde blockieren."
         )
 

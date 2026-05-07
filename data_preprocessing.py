@@ -22,8 +22,8 @@ def get_preprocessed_datasets():
 
     # Runden-Filterung: Entferne nicht "saubere" Runden für bessere Datenqualität
     df_clean = df[
-        (df['IsOutlap'] == 0) &      # Entferne Ausläufe
-        (df['IsPitstop'] == 0)       # Entferne Einläufe
+        (df['IsOutlap'] == 0) &      # Entferne Outlaps
+        (df['IsPitstop'] == 0)       # Entferne Inlaps
     ].copy()
 
     # Teile in Nass- und Trocken-Datensätze auf

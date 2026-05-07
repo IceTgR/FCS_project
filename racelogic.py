@@ -9,7 +9,7 @@ from opponents import advance_opponents, build_opponent_table
 
 
 def roll_safety_event():
-    """Startet ein neues Sicherheitsereignis (SC/VSC) mit Zufallsdauer."""
+    """Startet ein neues Safety-Ereignis (SC/VSC) mit Zufallsdauer."""
     if not hasattr(st.session_state, 'safety_event_duration'):
         st.session_state.safety_event_duration = 0
     if not hasattr(st.session_state, 'safety_event_status'):

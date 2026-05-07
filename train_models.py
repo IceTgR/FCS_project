@@ -8,7 +8,7 @@ from ML_lap_times import train_dry_models
 from retrieve_data import fastf1_to_sql
 
 DB_PATH = 'f1_project.db'
-# 3 strategically diverse tracks (27 API calls vs 54 before)
+# 3 strategisch diverse legacy Strecken und 5 legacy Teams 
 TRACK_LIST = ['Belgian Grand Prix', 'British Grand Prix', 'Italian Grand Prix']
 TEAM_LIST = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
 MODEL_PATHS = [f"models/dry/rf_{track.replace(' ', '_')}.pkl" for track in TRACK_LIST]

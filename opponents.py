@@ -222,7 +222,7 @@ def build_opponent_table(opponents, total_laps):
                 'Geplanter Boxenlap': opponent.pit_lap,
                 'Ziel-Reifenmischung': opponent.next_compound,
                 'Gesamtzeit': round(opponent.car.total_time, 2),
-                'Status': 'Beendet' if opponent.car.lap > total_laps else 'Läuft',
+                'Status': 'Beendet' if opponent.car.lap > total_laps else 'Im Rennen',
             }
         )
     return rows

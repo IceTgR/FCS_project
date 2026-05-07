@@ -109,7 +109,7 @@ def _build_live_standings(player, opponents) -> pd.DataFrame:
             "Alter": r["tire_age"],
             "Letzte Runde": _fmt_time(r["last_lap"]),
             "Stops": r["pit_stops"],
-            "Δ Vordermann": delta,
+            "Rückstand": delta,
         })
 
     return pd.DataFrame(result)
@@ -550,7 +550,7 @@ def render_setup_page():
     # KI-Stratege Briefing — Zielreifen ist hier integriert, da er nur dafür benötigt wird
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
-    with st.expander("🏎  KI nach optimalem Boxenstoppfenster fragen", expanded=True):
+    with st.expander("🏎  KI nach optimalem Boxenstoppfenster fragen", expanded=False):
         st.markdown(
             '<div class="f1-sub">Wähle den Zielreifen und lass die KI die mathematisch schnellste Strategie berechnen.</div>',
             unsafe_allow_html=True,
@@ -661,8 +661,8 @@ def _race_summary(player, total_laps, opponents):
             <div class="section-label">RENNERGEBNIS</div>
             <div style="margin-top:0.6rem;">
                 <div class="metric-tile" style="margin-bottom:0.6rem;">
-                    <div class="mlabel">ENDPLATZ</div>
-                    <div class="mval" style="font-size:3rem;line-height:1;">P{final_pos}</div>
+                    <div class="mlabel">ENDPLATZIERUNG</div>
+                    <div class="mval" style="font-size:3rem;line-height:1;">{"DQ" if player.pitstop_counter == 0 else f"P{final_pos}"}</div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
                     <div class="metric-tile">
@@ -807,6 +807,26 @@ def _race_fragment():
         st.markdown('<div class="section-label">REIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
         _tire_selector("pitstop_tire_choice", default="SOFT", disabled_tire=player.tire)
 
+        # KI-Empfehlung direkt für den gewählten Pitstop-Reifen
+        pit_choice = st.session_state.get("pitstop_tire_choice", "SOFT")
+        try:
+            best_lap = find_optimal_pit_lap(
+                track_name=track, total_laps=total_laps,
+                team=player.team, start_compound=player.tire,
+                next_compound=pit_choice, air_temp=air_temp,
+            )
+            st.markdown(
+                f'<div class="f1-card" style="padding:0.6rem 0.9rem;margin-bottom:0.5rem;">'
+                f'<div class="mlabel">KI-EMPFEHLUNG</div>'
+                f'<div style="color:#fff;font-size:0.88rem;font-weight:700;margin-top:0.2rem;">'
+                f'Empfehlung für <span style="color:{TIRE_COLORS[pit_choice]};font-weight:900;">{pit_choice}</span>: '
+                f'Pitstop in Runde <span style="color:#e10600;font-size:1.05rem;">{best_lap}</span>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+        except Exception:
+            pass  # Kein Modell vorhanden — still ignorieren
+
         btn_l, btn_r = st.columns(2)
         with btn_l:
             if st.button("▶  Nächste Runde", key="continue_btn", width='stretch'):
@@ -881,31 +901,6 @@ def _race_fragment():
                 .interactive(bind_y=False)
             )
             st.altair_chart(chart, width='stretch')
-
-        # Live-KI-Stratege
-        st.markdown('<div class="section-label">LIVE KI-STRATEGE</div>', unsafe_allow_html=True)
-        adv_col, res_col = st.columns([1, 2])
-        with adv_col:
-            available_tires = [t for t in ["SOFT", "MEDIUM", "HARD"] if t != player.tire]
-            if st.session_state.get("live_target_tire") not in available_tires:
-                st.session_state.live_target_tire = available_tires[0]
-            live_target = st.selectbox(
-                "Strategie auswerten für:",
-                available_tires,
-                key="live_target_tire",
-            )
-        with res_col:
-            try:
-                best = find_optimal_pit_lap(
-                    track_name=track, total_laps=total_laps,
-                    team=player.team, start_compound=player.tire,
-                    next_compound=live_target, air_temp=air_temp,
-                )
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.success(f"Boxenstopp in Runde **{best}** → {live_target}")
-            except Exception as _e:
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.warning(f"KI-Stratege Fehler: {_e}")
 
         # Live-Rangliste (Spieler + Gegner, nach Gesamtzeit sortiert)
         st.markdown('<div class="section-label" style="margin-top:0.5rem;">LIVE-RANGLISTE</div>', unsafe_allow_html=True)

@@ -40,6 +40,15 @@ if 'ml_bootstrap_done' not in st.session_state:
     if status_lines:
         st.info('ML-Einrichtung: ' + ' | '.join(status_lines))
 
+    # Falls Rate-Limit auftrat, den User informieren
+    if bootstrap_status.get('rate_limited'):
+        wait_s = bootstrap_status.get('rate_limit_wait', 0)
+        if wait_s >= 60:
+            wait_text = f"ca. {wait_s//60} Minuten"
+        else:
+            wait_text = f"ca. {wait_s} Sekunden"
+        st.warning(f"Rate-Limit erreicht beim Laden externer Daten — das Laden wurde verlangsamt ({wait_text}). Bitte habe Geduld.")
+
     # Ausgabe der MAE-Ergebnisse explizit in die Konsole/Terminal
     try:
         logging.basicConfig(level=logging.INFO)

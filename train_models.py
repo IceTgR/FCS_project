@@ -29,8 +29,12 @@ def ensure_ml_assets():
     if not os.path.exists(DB_PATH):
         current_year = datetime.now().year
         years = range(2018, current_year + 1)
-        fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
+        ret = fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
         status['created_db'] = True
+        # rate-limit info propagation
+        if isinstance(ret, dict):
+            status['rate_limited'] = ret.get('rate_limited', False)
+            status['rate_limit_wait'] = ret.get('max_wait_seconds', 0)
 
     # Trainiere Modelle wenn nicht vorhanden
     if status['created_db'] or not models_exist():

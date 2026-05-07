@@ -466,30 +466,36 @@ def _team_selector():
     return st.session_state.team_player
 
 
-def _tire_selector(session_key: str, default: str = "SOFT") -> str:
+def _tire_selector(session_key: str, default: str = "SOFT", disabled_tire: str = None) -> str:
     """Visueller Reifenauswähler mit farbigen Badge-Karten."""
-    if session_key not in st.session_state:
-        st.session_state[session_key] = default
+    current = st.session_state.get(session_key)
+    if current is None or current == disabled_tire:
+        available = [t for t in ["SOFT", "MEDIUM", "HARD"] if t != disabled_tire]
+        st.session_state[session_key] = available[0] if available else default
 
     cols = st.columns(3)
     for col, tire in zip(cols, ["SOFT", "MEDIUM", "HARD"]):
-        color = TIRE_COLORS[tire]
-        lbl   = TIRE_LABELS[tire]
+        color    = TIRE_COLORS[tire]
+        lbl      = TIRE_LABELS[tire]
+        disabled = tire == disabled_tire
         selected = st.session_state[session_key] == tire
-        border = f"2px solid {color}" if selected else "2px solid #2a2a2a"
-        glow   = f"box-shadow:0 0 10px {color}44;" if selected else ""
-        bg     = "#1a1a1a" if selected else "#111111"
+        border   = f"2px solid {color}" if selected else ("2px solid #1a1a1a" if disabled else "2px solid #2a2a2a")
+        glow     = f"box-shadow:0 0 10px {color}44;" if selected else ""
+        bg       = "#1a1a1a" if selected else ("#0d0d0d" if disabled else "#111111")
+        opacity  = "opacity:0.35;" if disabled else ""
 
         with col:
             st.markdown(f"""
-            <div class="tire-card" style="border:{border};background:{bg};{glow}">
+            <div class="tire-card" style="border:{border};background:{bg};{glow}{opacity}">
                 <div class="tire-icon" style="color:{color};border-color:{color};">{lbl}</div>
                 <div style="color:{color};font-size:0.72rem;font-weight:700;letter-spacing:1px;">
                     {tire}
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            if selected:
+            if disabled:
+                st.button("–", key=f"{session_key}_btn_{tire}", disabled=True, width='stretch')
+            elif selected:
                 st.button("✓", key=f"{session_key}_btn_{tire}", disabled=True, width='stretch')
             else:
                 if st.button("Wählen", key=f"{session_key}_btn_{tire}", width='stretch'):
@@ -537,10 +543,7 @@ def render_setup_page():
             step=1, format="%d°C", label_visibility="collapsed",
             key="air_temp_select",
         )
-        st.markdown(
-            f'<div class="f1-sub">{air_temp}°C &nbsp;·&nbsp; {t_range["min"]}–{t_range["max"]}°C</div>',
-            unsafe_allow_html=True,
-        )
+        pass  # no sub-label needed under slider
 
     st.markdown("---")
 
@@ -553,7 +556,7 @@ def render_setup_page():
             unsafe_allow_html=True,
         )
         st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
-        target_tire = _tire_selector("target_tire_sel", default="HARD")
+        target_tire = _tire_selector("target_tire_sel", default="HARD", disabled_tire=tire_start)
 
         if st.button("Optimale Boxenstopprunde berechnen", width='stretch'):
             with st.spinner("Strategie wird simuliert…"):
@@ -649,28 +652,31 @@ def _race_summary(player, total_laps, opponents):
     s   = total_s % 60
     avg = total_s / max(1, len(history))
     best = min(r["Rundenzeit"] for r in history) if history else 0.0
+    final_pos = _calculate_position(player, opponents)
 
     col_stats, col_chart = st.columns([1, 2])
     with col_stats:
         st.markdown(f"""
         <div class="f1-card">
             <div class="section-label">RENNERGEBNIS</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.6rem;">
-                <div class="metric-tile">
-                    <div class="mlabel">GESAMTZEIT</div>
-                    <div class="mval" style="font-size:1.1rem;">{m}:{s:05.2f}</div>
+            <div style="margin-top:0.6rem;">
+                <div class="metric-tile" style="margin-bottom:0.6rem;">
+                    <div class="mlabel">ENDPLATZ</div>
+                    <div class="mval" style="font-size:3rem;line-height:1;">P{final_pos}</div>
                 </div>
-                <div class="metric-tile">
-                    <div class="mlabel">Ø RUNDENZEIT</div>
-                    <div class="mval" style="font-size:1.1rem;">{_fmt_time(avg)}</div>
-                </div>
-                <div class="metric-tile">
-                    <div class="mlabel">BOXENSTOPPS</div>
-                    <div class="mval" style="font-size:1.25rem;">{player.pitstop_counter}</div>
-                </div>
-                <div class="metric-tile">
-                    <div class="mlabel">BESTE RUNDE</div>
-                    <div class="mval" style="font-size:1.1rem;">{_fmt_time(best)}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+                    <div class="metric-tile">
+                        <div class="mlabel">Ø RUNDENZEIT</div>
+                        <div class="mval" style="font-size:1.1rem;">{_fmt_time(avg)}</div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="mlabel">BESTE RUNDE</div>
+                        <div class="mval" style="font-size:1.1rem;">{_fmt_time(best)}</div>
+                    </div>
+                    <div class="metric-tile" style="grid-column:1/-1;">
+                        <div class="mlabel">BOXENSTOPPS</div>
+                        <div class="mval" style="font-size:1.25rem;">{player.pitstop_counter}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -678,10 +684,21 @@ def _race_summary(player, total_laps, opponents):
 
     with col_chart:
         if history:
+            import altair as alt
             df = pd.DataFrame(history)
-            df["Kumulative Zeit"] = df["Rundenzeit"].cumsum()
             st.markdown('<div class="section-label">RUNDENZEITENENTWICKLUNG</div>', unsafe_allow_html=True)
-            st.area_chart(df.set_index("Runde")["Kumulative Zeit"], color="#e10600", height=220)
+            chart = (
+                alt.Chart(df)
+                .mark_line(color="#e10600", strokeWidth=2, point=alt.OverlayMarkDef(color="#e10600", size=40))
+                .encode(
+                    x=alt.X("Runde:Q", scale=alt.Scale(domain=[1, total_laps], clamp=True), title="Runde"),
+                    y=alt.Y("Rundenzeit:Q", scale=alt.Scale(zero=False), title="Zeit (s)"),
+                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N"],
+                )
+                .properties(width="container", height=220)
+                .interactive(bind_y=False)
+            )
+            st.altair_chart(chart, width='stretch')
 
     # Endrangliste
     st.markdown('<div class="section-label" style="margin-top:0.5rem;">ENDRANGLISTE</div>', unsafe_allow_html=True)
@@ -787,18 +804,12 @@ def _race_fragment():
         # Countdown ÜBER dem Pitstop-Label
         st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
 
-        st.markdown('<div class="section-label">PITSTOP</div>', unsafe_allow_html=True)
-
-        st.radio(
-            "Reifen für Boxenstopp:",
-            ["SOFT", "MEDIUM", "HARD"],
-            key="pitstop_tire_choice",
-            horizontal=True,
-        )
+        st.markdown('<div class="section-label">REIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
+        _tire_selector("pitstop_tire_choice", default="SOFT", disabled_tire=player.tire)
 
         btn_l, btn_r = st.columns(2)
         with btn_l:
-            if st.button("▶  Weiter", key="continue_btn", width='stretch'):
+            if st.button("▶  Nächste Runde", key="continue_btn", width='stretch'):
                 _do_continue(player, total_laps)
         with btn_r:
             if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
@@ -819,7 +830,7 @@ def _race_fragment():
                 delta_color = "#00cc66" if diff < 0 else "#ff4444"
                 delta_str   = f"{diff:+.3f}s"
 
-            m1, m2, m3 = st.columns([2, 1, 1])
+            m1, m2, m3 = st.columns(3)
             with m1:
                 st.markdown(f"""
                 <div class="metric-tile" style="text-align:left;padding:0.9rem 1.1rem;">
@@ -853,24 +864,34 @@ def _race_fragment():
                 unsafe_allow_html=True,
             )
 
-        # Aufbauender Zeitverlauf-Graph (kumulative Gesamtzeit)
+        # Rundenzeit-Verlauf (einzelne Rundenzeiten)
         if player.lap > 1:
+            import altair as alt
             history_df = pd.DataFrame(player.race_history)
-            history_df["Kumulative Zeit"] = history_df["Rundenzeit"].cumsum()
-            st.markdown('<div class="section-label" style="margin-top:0.25rem;">ZEITVERLAUF (KUMULATIV)</div>', unsafe_allow_html=True)
-            st.area_chart(
-                history_df.set_index("Runde")["Kumulative Zeit"],
-                color="#e10600",
-                height=160,
+            st.markdown('<div class="section-label" style="margin-top:0.25rem;">RUNDENZEITENENTWICKLUNG</div>', unsafe_allow_html=True)
+            chart = (
+                alt.Chart(history_df)
+                .mark_line(color="#e10600", strokeWidth=2, point=alt.OverlayMarkDef(color="#e10600", size=40))
+                .encode(
+                    x=alt.X("Runde:Q", scale=alt.Scale(domain=[1, total_laps], clamp=True), title="Runde"),
+                    y=alt.Y("Rundenzeit:Q", scale=alt.Scale(zero=False), title="Zeit (s)"),
+                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N"],
+                )
+                .properties(width="container", height=160)
+                .interactive(bind_y=False)
             )
+            st.altair_chart(chart, width='stretch')
 
         # Live-KI-Stratege
         st.markdown('<div class="section-label">LIVE KI-STRATEGE</div>', unsafe_allow_html=True)
         adv_col, res_col = st.columns([1, 2])
         with adv_col:
+            available_tires = [t for t in ["SOFT", "MEDIUM", "HARD"] if t != player.tire]
+            if st.session_state.get("live_target_tire") not in available_tires:
+                st.session_state.live_target_tire = available_tires[0]
             live_target = st.selectbox(
                 "Strategie auswerten für:",
-                ["SOFT", "MEDIUM", "HARD"],
+                available_tires,
                 key="live_target_tire",
             )
         with res_col:

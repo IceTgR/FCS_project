@@ -16,6 +16,7 @@ _MAX_WAIT_SECONDS = 0
 
 def _wait_for_rate_limit():
     now = time.time()
+    global _RATE_LIMITED_OCCURRED, _MAX_WAIT_SECONDS
     # clean old timestamps
     while _REQ_SEC and _REQ_SEC[0] <= now - 1:
         _REQ_SEC.popleft()

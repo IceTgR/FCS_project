@@ -25,7 +25,12 @@ if 'ml_bootstrap_done' not in st.session_state:
             pass
 
     with st.spinner('Vorbereitung von Daten und ML-Modellen beim ersten Start (dies kann einige Minuten dauern)...'):
-        st.session_state.ml_bootstrap_status = ensure_ml_assets(progress_callback=_progress_cb)
+        try:
+            st.session_state.ml_bootstrap_status = ensure_ml_assets(progress_callback=_progress_cb)
+        except TypeError as exc:
+            if 'progress_callback' not in str(exc):
+                raise
+            st.session_state.ml_bootstrap_status = ensure_ml_assets()
 
     st.session_state.ml_bootstrap_done = True
 

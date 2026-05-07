@@ -1,4 +1,5 @@
 import streamlit as st
+import logging
 from strategy_optimizer import find_optimal_pit_lap
 import pandas as pd
 import os
@@ -38,6 +39,16 @@ if 'ml_bootstrap_done' not in st.session_state:
 
     if status_lines:
         st.info('ML-Einrichtung: ' + ' | '.join(status_lines))
+
+    # Ausgabe der MAE-Ergebnisse explizit in die Konsole/Terminal
+    try:
+        logging.basicConfig(level=logging.INFO)
+        results = bootstrap_status.get('results')
+        if results:
+            for track, mae in results.items():
+                logging.info(f'MAE für {track}: {mae:.3f} Sekunden')
+    except Exception:
+        pass
 
 st.title('F1 Rennstrategie-Simulator')
 

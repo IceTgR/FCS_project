@@ -77,7 +77,7 @@ def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
         else:
             chunk = min(5, remaining)
 
-        message = f"{prefix} Noch {_format_wait_seconds(remaining)} warten."
+        message = f"Geschätzte Wartezeit: {_format_wait_seconds(remaining)} (Im schlimmsten Fall kann dies bis zu 1h dauern)"
         print(message)
         if progress_callback:
             try:
@@ -99,27 +99,28 @@ def _call_fastf1_with_retry(description, func, progress_callback=None):
             _RATE_LIMITED_OCCURRED = True
 
             wait_seconds = _extract_retry_after_seconds(exc)
-            if wait_seconds is None:
-                wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
-                message = (
-                    f"FastF1-Rate-Limit erreicht beim {description}. "
-                    f"Exakte Wartezeit unbekannt, ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. "
-                    "Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
-                )
-            else:
-                message = (
-                    f"FastF1-Rate-Limit erreicht beim {description}. "
-                    f"Ich warte {_format_wait_seconds(wait_seconds)} und versuche es erneut."
-                )
-
-            print(message)
+            context_msg = f"FastF1-Rate-Limit erreicht beim {description}."
+            print(context_msg)
             if progress_callback:
                 try:
-                    progress_callback(message)
+                    progress_callback(context_msg)
                 except Exception:
                     pass
 
-            _sleep_with_progress(wait_seconds, progress_callback, prefix=f"{description}:")
+            if wait_seconds is None:
+                wait_seconds = min(3600, max(30, 15 * (transient_attempts + 1)))
+                detail_msg = f"Exakte Wartezeit unbekannt, ich versuche es in {_format_wait_seconds(wait_seconds)} erneut. Falls das Limit serverseitig länger anhält, kann das bis zu 1 Stunde dauern."
+            else:
+                detail_msg = f"Ich warte {_format_wait_seconds(wait_seconds)} und versuche es erneut."
+
+            print(detail_msg)
+            if progress_callback:
+                try:
+                    progress_callback(detail_msg)
+                except Exception:
+                    pass
+
+            _sleep_with_progress(wait_seconds, progress_callback, prefix="")
             transient_attempts += 1
         except Exception:
             transient_attempts += 1

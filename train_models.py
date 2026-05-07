@@ -1,6 +1,7 @@
 # ML-Modell-Training für Rundenzeit-Vorhersagen.
 import os
 from datetime import datetime
+import sqlite3
 
 from data_preprocessing import get_preprocessed_datasets
 from ML_lap_times import train_dry_models

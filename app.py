@@ -9,6 +9,19 @@ from opponents import create_opponents
 from train_models import ensure_ml_assets, TRACK_LIST
 from ui_team_selector import render_team_selector
 
+_FASTF1_LOGGER_NAMES = (
+    'fastf1',
+    'fastf1.fastf1',
+    'fastf1.fastf1.core',
+    'fastf1.fastf1.req',
+    'fastf1.fastf1.api',
+    'fastf1.fastf1.utils',
+    'fastf1.core',
+    'fastf1.req',
+    'fastf1.api',
+    'fastf1.utils',
+)
+
 # --- 1. SEITENKONFIGURATION ---
 st.set_page_config(layout="wide")
 
@@ -19,6 +32,10 @@ if 'race_started' not in st.session_state:
 if 'ml_bootstrap_done' not in st.session_state:
     placeholder = st.empty()
 
+    # Drosseln der FastF1-Logger auf WARNING, um die Ausgabe im Terminal zu reduzieren
+    for logger_name in _FASTF1_LOGGER_NAMES:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
     def _render_bootstrap_warning():
         context_msg = st.session_state.get('ml_bootstrap_rate_limit_context')
         retry_msg = st.session_state.get('ml_bootstrap_rate_limit_retry')
@@ -28,13 +45,15 @@ if 'ml_bootstrap_done' not in st.session_state:
             placeholder.warning(context_msg)
         elif retry_msg:
             placeholder.warning(retry_msg)
+        else:
+            placeholder.empty()
 
     def _progress_cb(msg: str):
         try:
             if msg == '__FASTF1_RATE_LIMIT_RECOVERED__':
                 st.session_state.ml_bootstrap_rate_limit_context = None
                 st.session_state.ml_bootstrap_rate_limit_retry = None
-                placeholder.empty()
+                _render_bootstrap_warning()
                 return
             if msg.startswith('FastF1 API-Rate-Limit erreicht beim '):
                 st.session_state.ml_bootstrap_rate_limit_context = msg
@@ -42,8 +61,6 @@ if 'ml_bootstrap_done' not in st.session_state:
             elif msg.startswith('Wartezeit bis zum nächsten Retry: '):
                 st.session_state.ml_bootstrap_rate_limit_retry = msg
                 _render_bootstrap_warning()
-            else:
-                placeholder.warning(msg)
         except Exception:
             pass
 
@@ -100,6 +117,8 @@ if 'ml_bootstrap_done' not in st.session_state:
     # Ausgabe der MAE-Ergebnisse explizit in die Konsole/Terminal
     try:
         logging.basicConfig(level=logging.INFO)
+        for logger_name in _FASTF1_LOGGER_NAMES:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
         results = bootstrap_status.get('results')
         if results:
             for track, mae in results.items():

@@ -39,9 +39,6 @@ if 'ml_bootstrap_done' not in st.session_state:
     if status_lines:
         st.info('ML-Einrichtung: ' + ' | '.join(status_lines))
 
-    if bootstrap_status['trained_models'] and bootstrap_status['results']:
-        st.caption('Validierungs-MAE (Sekunden): ' + ', '.join(f"{track}: {mae:.3f}" for track, mae in bootstrap_status['results'].items()))
-
 st.title('F1 Rennstrategie-Simulator')
 
 # Streckenspezifische Temperaturbereiche und Runden.

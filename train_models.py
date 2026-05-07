@@ -17,7 +17,7 @@ def models_exist():
     return all(os.path.exists(path) for path in MODEL_PATHS)
 
 
-def ensure_ml_assets():
+def ensure_ml_assets(progress_callback=None):
     """Erstellt Datenbank und trainiert ML-Modelle falls nicht vorhanden."""
     status = {
         'created_db': False,
@@ -43,7 +43,7 @@ def ensure_ml_assets():
     if need_create:
         current_year = datetime.now().year
         years = range(2018, current_year + 1)
-        ret = fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
+        ret = fastf1_to_sql(years, TRACK_LIST, TEAM_LIST, progress_callback=progress_callback)
         status['created_db'] = True
         # rate-limit info propagation
         if isinstance(ret, dict):

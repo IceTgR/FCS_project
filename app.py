@@ -17,8 +17,15 @@ if 'race_started' not in st.session_state:
     st.session_state.race_started = False
 
 if 'ml_bootstrap_done' not in st.session_state:
+    placeholder = st.empty()
+    def _progress_cb(msg: str):
+        try:
+            placeholder.warning(msg)
+        except Exception:
+            pass
+
     with st.spinner('Vorbereitung von Daten und ML-Modellen beim ersten Start (dies kann einige Minuten dauern)...'):
-        st.session_state.ml_bootstrap_status = ensure_ml_assets()
+        st.session_state.ml_bootstrap_status = ensure_ml_assets(progress_callback=_progress_cb)
 
     st.session_state.ml_bootstrap_done = True
 

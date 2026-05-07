@@ -14,7 +14,7 @@ _RATE_LIMITED_OCCURRED = False
 _MAX_WAIT_SECONDS = 0
 
 
-def _wait_for_rate_limit():
+def _wait_for_rate_limit(progress_callback=None):
     now = time.time()
     global _RATE_LIMITED_OCCURRED, _MAX_WAIT_SECONDS
     # clean old timestamps
@@ -29,9 +29,15 @@ def _wait_for_rate_limit():
         # mark rate-limited (burst)
         _RATE_LIMITED_OCCURRED = True
         _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
-        print(f"Rate limit (burst) erreicht — warte ca. {wait:.1f}s")
+        msg = f"Rate limit (burst) erreicht — warte ca. {wait:.1f}s"
+        print(msg)
+        if progress_callback:
+            try:
+                progress_callback(msg)
+            except Exception:
+                pass
         time.sleep(wait)
-        return _wait_for_rate_limit()
+        return _wait_for_rate_limit(progress_callback)
     # Sustained: max 500 per hour
     if len(_REQ_HOUR) >= 500:
         sleep = _REQ_HOUR[0] + 3600 - now
@@ -39,9 +45,15 @@ def _wait_for_rate_limit():
         # mark rate-limited (sustained)
         _RATE_LIMITED_OCCURRED = True
         _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
-        print(f"Rate limit (sustained) erreicht — warte ca. {wait:.0f}s")
+        msg = f"Rate limit (sustained) erreicht — warte ca. {wait:.0f}s (bis zu 1 Stunde möglich)"
+        print(msg)
+        if progress_callback:
+            try:
+                progress_callback(msg)
+            except Exception:
+                pass
         time.sleep(wait)
-        return _wait_for_rate_limit()
+        return _wait_for_rate_limit(progress_callback)
     _REQ_SEC.append(now)
     _REQ_HOUR.append(now)
 
@@ -70,7 +82,7 @@ def _safe_get_session(year, roundnum, typ, retries=5):
     raise
 
 
-def fastf1_to_sql(years, track_list, team_list):
+def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
     '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''
 
     # Verzeichnis für Cache erstellen, damit die Daten lokal gespeichert werden und es somit schneller geht
@@ -122,6 +134,7 @@ def fastf1_to_sql(years, track_list, team_list):
                 session = _safe_get_session(year, event['RoundNumber'], 'R')
 
                 # Laden der Runden- und Wetterdaten und Messages, keine Telemetrie für schnellere Verarbeitung
+                # pass progress callback into rate limiter via _wait_for_rate_limit calls
                 session.load(laps=True, telemetry=False, weather=True, messages=True)
 
                 laps = session.laps.pick_teams(team_list).copy()

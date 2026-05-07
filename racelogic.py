@@ -69,6 +69,29 @@ def apply_safety_event_effect(car):
     """Wendet Rundenzeit-Effekt des aktiven Sicherheitsereignisses an."""
     car.lap_time *= get_safety_event_lap_multiplier()
 
+
+def compress_sc_field(player, opponents):
+    """Safety-Car-Feldkompression: reduziert Abstand zum direkten Vordermann um 75% pro Runde.
+    Minimum-Abstand zwischen je zwei aufeinanderfolgenden Autos: 0.8s (realistische Kolonne).
+    Lap-Time und race_history werden mitangepasst damit die Zeiten konsistent bleiben.
+    """
+    MIN_GAP = 0.8
+
+    cars = [player] + [opp.car for opp in opponents]
+    cars.sort(key=lambda c: c.total_time)
+
+    for i in range(1, len(cars)):
+        car = cars[i]
+        gap = car.total_time - cars[i - 1].total_time
+        if gap <= MIN_GAP:
+            continue
+        new_gap = max(MIN_GAP, gap * 0.25)
+        reduction = gap - new_gap
+        car.total_time -= reduction
+        car.lap_time = max(0.1, car.lap_time - reduction)
+        if car.race_history:
+            car.race_history[-1]["Rundenzeit"] = max(0.1, car.race_history[-1]["Rundenzeit"] - reduction)
+
 # Zeige die vor dem Rennen gewählten Optionen an.
 def write_chosen_options():
     """Zeigt Team, Reifen und Strecke des Spielers an."""

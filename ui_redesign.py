@@ -9,6 +9,7 @@ from car import Car
 from opponents import advance_opponents, build_opponent_table, create_opponents
 from racelogic import (
     apply_safety_event_effect,
+    compress_sc_field,
     get_safety_event_lap_multiplier,
     get_safety_event_pitstop_multiplier,
     resolve_safety_event,
@@ -72,7 +73,7 @@ def _build_live_standings(player, opponents) -> pd.DataFrame:
     rows = []
 
     # Spieler
-    p_last = player.race_history[-1]["Rundenzeit"] if player.race_history else player.lap_time
+    p_last = player.race_history[-1]["Rundenzeit"] if player.race_history else 0.0
     rows.append({
         "team_display": f"► {player.team}",
         "tire": player.tire,
@@ -617,6 +618,8 @@ def _do_continue(player, total_laps):
             get_safety_event_lap_multiplier(),
             get_safety_event_pitstop_multiplier(),
         )
+        if st.session_state.safety_event_status == 'SAFETYCAR':
+            compress_sc_field(player, st.session_state.opponents)
     resolve_safety_event()
     st.session_state.lap_start_time  = time.time()
     st.session_state.lap_started_for = player.lap
@@ -639,6 +642,8 @@ def _do_pit(player, total_laps):
             get_safety_event_lap_multiplier(),
             get_safety_event_pitstop_multiplier(),
         )
+        if st.session_state.safety_event_status == 'SAFETYCAR':
+            compress_sc_field(player, st.session_state.opponents)
     resolve_safety_event()
     st.session_state.lap_start_time  = time.time()
     st.session_state.lap_started_for = player.lap
@@ -759,6 +764,8 @@ def _race_fragment():
                 get_safety_event_lap_multiplier(),
                 get_safety_event_pitstop_multiplier(),
             )
+            if st.session_state.safety_event_status == 'SAFETYCAR':
+                compress_sc_field(player, opponents)
         resolve_safety_event()
         st.session_state.lap_start_time  = time.time()
         st.session_state.lap_started_for = player.lap
@@ -931,8 +938,6 @@ def render_race_page():
             f'<div class="f1-eyebrow">Rennen läuft</div>'
             f'<div style="font-size:1.35rem;font-weight:900;color:#fff;margin:0.1rem 0;">'
             f'{flag}&nbsp;{track}'
-            f'&nbsp;<span style="background:{color};padding:2px 10px;border-radius:4px;'
-            f'font-size:0.8rem;vertical-align:middle;">{team}</span>'
             f"</div>",
             unsafe_allow_html=True,
         )

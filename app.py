@@ -16,7 +16,7 @@ if 'race_started' not in st.session_state:
     st.session_state.race_started = False
 
 if 'ml_bootstrap_done' not in st.session_state:
-    with st.spinner('Vorbereitung von Daten und ML-Modellen beim ersten Start...'):
+    with st.spinner('Vorbereitung von Daten und ML-Modellen beim ersten Start (dies kann einige Minuten dauern)...'):
         st.session_state.ml_bootstrap_status = ensure_ml_assets()
 
     st.session_state.ml_bootstrap_done = True

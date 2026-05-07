@@ -5,7 +5,7 @@ import os
 from racelogic import write_chosen_options, race_simulation
 from car import Car
 from opponents import create_opponents
-from train_models import ensure_ml_assets
+from train_models import ensure_ml_assets, TRACK_LIST
 from ui_team_selector import render_team_selector
 
 # --- 1. SEITENKONFIGURATION ---
@@ -30,8 +30,11 @@ if 'ml_bootstrap_done' not in st.session_state:
 
     if bootstrap_status['trained_models']:
         status_lines.append('Modelle trainiert')
-    elif os.path.exists('models/dry/rf_Monaco_Grand_Prix.pkl') and os.path.exists('models/dry/rf_British_Grand_Prix.pkl'):
-        status_lines.append('Modelle bereit')
+    else:
+        # Überprüfe, ob alle neuen Modelle vorhanden sind
+        all_models_exist = all(os.path.exists(f"models/dry/rf_{track.replace(' ', '_')}.pkl") for track in TRACK_LIST)
+        if all_models_exist:
+            status_lines.append('Modelle bereit')
 
     if status_lines:
         st.info('ML-Einrichtung: ' + ' | '.join(status_lines))
@@ -41,10 +44,23 @@ if 'ml_bootstrap_done' not in st.session_state:
 
 st.title('F1 Rennstrategie-Simulator')
 
-# Streckenspezifische Temperaturbereiche.
+# Streckenspezifische Temperaturbereiche und Runden.
 TRACK_TEMP_RANGES = {
-    'Monaco Grand Prix': {'min': 16, 'max': 28, 'default': 22},      
+    'Abu Dhabi Grand Prix': {'min': 20, 'max': 32, 'default': 26},      
+    'Austrian Grand Prix': {'min': 12, 'max': 28, 'default': 20},
+    'Belgian Grand Prix': {'min': 10, 'max': 22, 'default': 16},      
     'British Grand Prix': {'min': 14, 'max': 26, 'default': 20},     
+    'Hungarian Grand Prix': {'min': 14, 'max': 30, 'default': 22},
+    'Italian Grand Prix': {'min': 14, 'max': 28, 'default': 21},
+}
+
+TRACK_LAP_COUNTS = {
+    'Abu Dhabi Grand Prix': 58,
+    'Austrian Grand Prix': 71,
+    'Belgian Grand Prix': 44,
+    'British Grand Prix': 52,
+    'Hungarian Grand Prix': 70,
+    'Italian Grand Prix': 53,
 }
 
 # ==========================================
@@ -62,7 +78,7 @@ if not st.session_state.race_started:
     
     with col_track:
         st.session_state.track = st.selectbox('Strecke wählen:', 
-                                             ['Monaco Grand Prix', 'British Grand Prix'])
+                                             ['Abu Dhabi Grand Prix', 'Austrian Grand Prix', 'Belgian Grand Prix', 'British Grand Prix', 'Hungarian Grand Prix', 'Italian Grand Prix'])
     
     with col_start_tire:
         tire_start = st.radio('Startreifen:', ['SOFT', 'MEDIUM', 'HARD'], key="start_tire")
@@ -84,7 +100,7 @@ if not st.session_state.race_started:
     st.session_state.air_temp = air_temp
 
     # --- KI-STRATEGE: VORBESPRECHUNG ---
-    sim_laps = 78 if st.session_state.track == 'Monaco Grand Prix' else 52
+    sim_laps = TRACK_LAP_COUNTS.get(st.session_state.track, 52)
     
     with st.expander("🏎️ KI-Stratege Briefing", expanded=True):
         st.write("Lass die KI das Rennen simulieren, um deine mathematisch schnellste Boxenstrategie zu finden!")
@@ -123,12 +139,8 @@ if not st.session_state.race_started:
         st.session_state.race_started = True
         
         # 2. Spielerauto erstellen und Rundenzahl setzen.
-        if st.session_state.track == 'Monaco Grand Prix':
-            st.session_state.player = Car(team_player, 'Monaco Grand Prix', tire_start) 
-            st.session_state.total_laps = 78 
-        elif st.session_state.track == 'British Grand Prix':
-            st.session_state.player = Car(team_player, 'British Grand Prix', tire_start) 
-            st.session_state.total_laps = 52 
+        st.session_state.player = Car(team_player, st.session_state.track, tire_start) 
+        st.session_state.total_laps = TRACK_LAP_COUNTS.get(st.session_state.track, 52) 
             
         # 3. Gegner erstellen.
         st.session_state.opponents = create_opponents(team_player, st.session_state.track, st.session_state.total_laps)

@@ -1,12 +1,13 @@
 # ML-Modell-Training für Rundenzeit-Vorhersagen.
 import os
+from datetime import datetime
 
 from data_preprocessing import get_preprocessed_datasets
 from ML_lap_times import train_dry_models
 from retrieve_data import fastf1_to_sql
 
 DB_PATH = 'f1_project.db'
-TRACK_LIST = ['Monaco Grand Prix', 'British Grand Prix']
+TRACK_LIST = ['Abu Dhabi Grand Prix', 'Austrian Grand Prix', 'Belgian Grand Prix', 'British Grand Prix', 'Hungarian Grand Prix', 'Italian Grand Prix']
 TEAM_LIST = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
 MODEL_PATHS = [f"models/dry/rf_{track.replace(' ', '_')}.pkl" for track in TRACK_LIST]
 
@@ -26,7 +27,8 @@ def ensure_ml_assets():
 
     # Erstelle Datenbank wenn nicht vorhanden
     if not os.path.exists(DB_PATH):
-        years = range(2018, 2026)
+        current_year = datetime.now().year
+        years = range(2018, current_year + 1)
         fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)
         status['created_db'] = True
 

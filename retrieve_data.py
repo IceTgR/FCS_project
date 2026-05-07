@@ -27,7 +27,6 @@ def _wait_for_rate_limit():
         sleep = 1 - (now - _REQ_SEC[0])
         wait = max(0.25, sleep)
         # mark rate-limited (burst)
-        global _RATE_LIMITED_OCCURRED, _MAX_WAIT_SECONDS
         _RATE_LIMITED_OCCURRED = True
         _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
         print(f"Rate limit (burst) erreicht — warte ca. {wait:.1f}s")
@@ -38,7 +37,6 @@ def _wait_for_rate_limit():
         sleep = _REQ_HOUR[0] + 3600 - now
         wait = max(1, sleep)
         # mark rate-limited (sustained)
-        global _RATE_LIMITED_OCCURRED, _MAX_WAIT_SECONDS
         _RATE_LIMITED_OCCURRED = True
         _MAX_WAIT_SECONDS = max(_MAX_WAIT_SECONDS, wait)
         print(f"Rate limit (sustained) erreicht — warte ca. {wait:.0f}s")

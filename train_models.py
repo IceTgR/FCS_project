@@ -25,8 +25,22 @@ def ensure_ml_assets():
         'results': None,
     }
 
-    # Erstelle Datenbank wenn nicht vorhanden
+    # Erstelle Datenbank wenn nicht vorhanden oder wenn Tabelle fehlt
+    need_create = False
     if not os.path.exists(DB_PATH):
+        need_create = True
+    else:
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='laptimes'")
+            if not cur.fetchone():
+                need_create = True
+            conn.close()
+        except Exception:
+            need_create = True
+
+    if need_create:
         current_year = datetime.now().year
         years = range(2018, current_year + 1)
         ret = fastf1_to_sql(years, TRACK_LIST, TEAM_LIST)

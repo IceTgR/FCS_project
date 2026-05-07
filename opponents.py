@@ -12,35 +12,37 @@ TEAM_POOL = ['Ferrari', 'Mercedes', 'Red Bull', 'McLaren', 'Williams']
 # Die Werte bleiben bewusst einfach: Sie geben eine Wahrscheinlichkeit an, mit der ein Team mit einem
 # bestimmten Startreifen ins Rennen geht. So haben wir etwas variierende Gegner mit verschiedenen Profilen.
 BASE_STARTING_TIRE_WEIGHTS = {
-    'Ferrari': [('SOFT', 0.55), ('MEDIUM', 0.35), ('HARD', 0.10)],
-    'Mercedes': [('SOFT', 0.20), ('MEDIUM', 0.50), ('HARD', 0.30)],
-    'Red Bull': [('SOFT', 0.35), ('MEDIUM', 0.45), ('HARD', 0.20)],
-    'McLaren': [('SOFT', 0.45), ('MEDIUM', 0.40), ('HARD', 0.15)],
-    'Williams': [('SOFT', 0.20), ('MEDIUM', 0.40), ('HARD', 0.40)],
+    'Ferrari':  [('SOFT', 0.60), ('MEDIUM', 0.35), ('HARD', 0.05)],
+    'Mercedes': [('SOFT', 0.25), ('MEDIUM', 0.65), ('HARD', 0.10)],
+    'Red Bull': [('SOFT', 0.40), ('MEDIUM', 0.52), ('HARD', 0.08)],
+    'McLaren':  [('SOFT', 0.55), ('MEDIUM', 0.38), ('HARD', 0.07)],
+    'Williams': [('SOFT', 0.25), ('MEDIUM', 0.60), ('HARD', 0.15)],
 }
 
 # Typisches Boxenfenster je Team als Anteil der Renndistanz womit den Gegnern Profile verpasst werden.
+# Enger gefasst (0.42–0.47) damit Stops im Rennen nah beieinander liegen und spannende Duelle entstehen.
 BASE_PIT_FRACTION_PROFILES = {
-    'Ferrari': 0.45,
-    'Mercedes': 0.48,
-    'Red Bull': 0.40,
-    'McLaren': 0.38,
-    'Williams': 0.50,
+    'Ferrari':  0.44,
+    'Mercedes': 0.46,
+    'Red Bull': 0.43,
+    'McLaren':  0.42,
+    'Williams': 0.47,
 }
 
 # Der Startreifen bestimmt die Strategie stark mit: weich = früher Stopp, hart = späterer Stopp.
+# Faktoren gestrafft damit alle Teams in einem realistischen Fenster (~30–50% Renndistanz) stoppen.
 STARTING_TIRE_STRATEGIES = {
     'SOFT': {
-        'pit_fraction_factor': 0.60,
-        'next_compound_weights': [('MEDIUM', 0.45), ('HARD', 0.55)],
+        'pit_fraction_factor': 0.72,
+        'next_compound_weights': [('MEDIUM', 0.30), ('HARD', 0.70)],
     },
     'MEDIUM': {
-        'pit_fraction_factor': 0.80,
-        'next_compound_weights': [('SOFT', 0.15), ('HARD', 0.85)],
+        'pit_fraction_factor': 0.88,
+        'next_compound_weights': [('SOFT', 0.10), ('HARD', 0.90)],
     },
     'HARD': {
-        'pit_fraction_factor': 1.15,
-        'next_compound_weights': [('SOFT', 0.25), ('MEDIUM', 0.75)],
+        'pit_fraction_factor': 1.02,
+        'next_compound_weights': [('SOFT', 0.15), ('MEDIUM', 0.85)],
     },
 }
 
@@ -92,7 +94,7 @@ def _starting_tire_for_team(team):
     # in jedem Lauf identisch wiederholen.
     randomized_weights = []
     for compound, base_weight in BASE_STARTING_TIRE_WEIGHTS[team]:
-        adjusted_weight = max(0.01, base_weight + random.uniform(-0.08, 0.08))
+        adjusted_weight = max(0.01, base_weight + random.uniform(-0.05, 0.05))
         randomized_weights.append((compound, adjusted_weight))
 
     normalized_weights = _normalize_weighted_values(randomized_weights)

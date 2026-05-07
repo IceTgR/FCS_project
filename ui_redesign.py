@@ -817,8 +817,7 @@ def _race_fragment():
             )
             st.markdown(
                 f'<div class="f1-card" style="padding:0.6rem 0.9rem;margin-bottom:0.5rem;">'
-                f'<div class="mlabel">KI-EMPFEHLUNG</div>'
-                f'<div style="color:#fff;font-size:0.88rem;font-weight:700;margin-top:0.2rem;">'
+                f'<div style="color:#fff;font-size:0.88rem;font-weight:700;">'
                 f'Empfehlung für <span style="color:{TIRE_COLORS[pit_choice]};font-weight:900;">{pit_choice}</span>: '
                 f'Pitstop in Runde <span style="color:#e10600;font-size:1.05rem;">{best_lap}</span>'
                 f'</div></div>',

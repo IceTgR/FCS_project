@@ -102,3 +102,78 @@ def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_comp
     return best_lap
 
 
+@st.cache_data
+def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compound_2, air_temp):
+    """
+    User provides Start Tyre and 2nd Tyre.
+    AI predicts if a 2nd stop is needed, what the 3rd tyre should be, and all pit laps.
+    """
+    model, train_cols = load_track_model(track_name)
+    
+    compounds = ['SOFT', 'MEDIUM', 'HARD']
+    min_stint = 8 # Prevent unrealistic 2-lap stints
+    
+    # --- 1-STOP OPTIMIZATION ---
+    best_1_stop_time = float('inf')
+    best_1_stop_lap = -1
+    
+    # Test all laps for the 1st pit stop
+    for pit1 in range(min_stint, total_laps - min_stint):
+        pit_stops = [{'lap': pit1, 'compound': compound_2}]
+        time = simulate_race_time(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
+        
+        if time < best_1_stop_time:
+            best_1_stop_time = time
+            best_1_stop_lap = pit1
+
+    # --- 2-STOP OPTIMIZATION ---
+    best_2_stop_time = float('inf')
+    best_2_stop_pit1 = -1
+    best_2_stop_pit2 = -1
+    best_compound_3 = None
+    
+    # Test all possible 3rd tyres
+    for comp3 in compounds:
+        # F1 Rule: Must use at least 2 different compounds in a race
+        if start_compound == compound_2 and compound_2 == comp3:
+            continue
+            
+        # Test all lap combinations for Pit 1 and Pit 2
+        for pit1 in range(min_stint, total_laps - (min_stint * 2)):
+            for pit2 in range(pit1 + min_stint, total_laps - min_stint):
+                
+                pit_stops = [
+                    {'lap': pit1, 'compound': compound_2},
+                    {'lap': pit2, 'compound': comp3}
+                ]
+                
+                time = simulate_race_time(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
+                
+                if time < best_2_stop_time:
+                    best_2_stop_time = time
+                    best_2_stop_pit1 = pit1
+                    best_2_stop_pit2 = pit2
+                    best_compound_3 = comp3
+
+    # --- FINAL DECISION ---
+    # Compare the best 1-stop against the best 2-stop
+    if best_2_stop_time < best_1_stop_time:
+        return {
+            "recommendation": "2-Stop",
+            "time_saved": best_1_stop_time - best_2_stop_time, # How much faster it is
+            "total_time": best_2_stop_time,
+            "pit1_lap": best_2_stop_pit1,
+            "pit1_tyre": compound_2,
+            "pit2_lap": best_2_stop_pit2,
+            "pit2_tyre": best_compound_3
+        }
+    else:
+        return {
+            "recommendation": "1-Stop",
+            "time_saved": best_2_stop_time - best_1_stop_time,
+            "total_time": best_1_stop_time,
+            "pit1_lap": best_1_stop_lap,
+            "pit1_tyre": compound_2
+        }
+
+

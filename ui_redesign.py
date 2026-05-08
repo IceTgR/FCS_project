@@ -508,8 +508,12 @@ def _tire_selector(session_key: str, default: str = "SOFT", disabled_tire: str =
 
 
 def render_setup_page():
+    # Kopfzeile
+    st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
     st.markdown('<div class="f1-eyebrow">Race Strategy Simulator</div>', unsafe_allow_html=True)
-    st.markdown('<div class="f1-header">RACE STRATEGY<br>SIMULATOR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="f1-heading">Neue Simulation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="f1-sub">Triff die richtigen Entscheidungen. Schlage die Konkurrenz. Führe dein Team zum Sieg.</div>', unsafe_allow_html=True)
+    st.markdown("---")
 
     team = _team_selector()
     st.markdown("---")

@@ -66,7 +66,45 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
     total_time += np.sum(predicted_lap_times)
     
     return total_time
-
+def simulate_race_time_multi(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp, pit_loss_sec=22.0):
+    """Simuliert Gesamtrennzeit für beliebig viele Boxenstopps (z.B. 1-Stop, 2-Stop)."""
+    total_time = 0.0
+    tyre_life = 1
+    current_compound = start_compound
+    
+    # Sortiere Boxenstopps nach Runden, um sie in der richtigen Reihenfolge abzuarbeiten
+    pit_stops = sorted(pit_stops, key=lambda x: x['lap'])
+    next_stop_idx = 0
+    
+    laps_data = []
+    
+    for lap in range(1, total_laps + 1):
+        # Überprüfe, ob in dieser Runde ein Boxenstopp ansteht
+        if next_stop_idx < len(pit_stops) and lap == pit_stops[next_stop_idx]['lap']:
+            current_compound = pit_stops[next_stop_idx]['compound']
+            tyre_life = 1
+            total_time += pit_loss_sec
+            next_stop_idx += 1
+            
+        laps_data.append({
+            'LapNumber': lap,
+            'TyreLife': tyre_life,
+            'AirTemp': air_temp,
+            'Team': team,
+            'Compound': current_compound
+        })
+        
+        tyre_life += 1
+        
+    df_sim = pd.DataFrame(laps_data)
+    X_sim = pd.get_dummies(df_sim, columns=['Team', 'Compound'])
+    X_sim = X_sim.reindex(columns=train_cols, fill_value=0)
+    
+    predicted_lap_times = model.predict(X_sim)
+    total_time += np.sum(predicted_lap_times)
+    
+    return total_time
+    
 @st.cache_data
 def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
     """Findet optimale Boxenstopp-Runde durch Vergleich aller möglichen Strategien."""

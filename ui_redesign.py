@@ -4,6 +4,7 @@ import time
 
 import pandas as pd
 import streamlit as st
+from strategy_optimizer import find_optimal_pit_lap, optimize_hybrid_strategy
 
 from car import Car
 from opponents import advance_opponents, build_opponent_table, create_opponents
@@ -551,47 +552,52 @@ def render_setup_page():
     # KI-Stratege Briefing — Zielreifen ist hier integriert, da er nur dafür benötigt wird
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
-    with st.expander("🏎  KI nach optimalem Boxenstoppfenster fragen", expanded=False):
-        st.markdown(
-            '<div class="f1-sub">Wähle den Zielreifen und lass die KI die mathematisch schnellste Strategie berechnen.</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
-        target_tire = _tire_selector("target_tire_sel", default="HARD", disabled_tire=tire_start)
+# --- NEW HYBRID STRATEGY PREDICTOR ---
+    with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
+        st.markdown("<p style='color:#ccc; font-size:0.9rem;'>Wähle den Startreifen und den Ziel-Reifen für den ersten Stopp. Die KI simuliert den Verschleiß und entscheidet, ob ein zweiter Stopp notwendig ist.</p>", unsafe_allow_html=True)
+        
+        ai_col1, ai_col2 = st.columns(2)
+        with ai_col1:
+            ai_start_tyre = st.selectbox("Startreifen", ["SOFT", "MEDIUM", "HARD"], key="ai_start")
+        with ai_col2:
+            ai_target_tyre = st.selectbox("Ziel-Reifen (Stopp 1)", ["SOFT", "MEDIUM", "HARD"], key="ai_target")
 
-        if st.button("Optimale Boxenstopprunde berechnen", width='stretch'):
-            with st.spinner("Strategie wird simuliert…"):
-                try:
-                    best_lap = find_optimal_pit_lap(
-                        track_name=track, total_laps=laps, team=team,
-                        start_compound=tire_start, next_compound=target_tire,
-                        air_temp=air_temp,
-                    )
-                    st.success(
-                        f"**Optimale Strategie:** Boxenstopp in Runde **{best_lap}** — "
-                        f"{tire_start} → {target_tire}"
-                    )
-                    if team in ("Red Bull", "Mercedes"):
-                        st.info(f"{team} zeigt starkes Reifenmanagement. Die KI empfiehlt, bis Runde {best_lap} zu fahren.")
-                    elif team in ("Ferrari", "McLaren"):
-                        st.info(f"{team} erreicht früh seinen Höchstleistung. Boxenstopp in Runde {best_lap} verhindert den Leistungsabfall.")
-                    else:
-                        st.info(f"Für {team} minimiert Runde {best_lap} die Zeit auf verschlissenen Reifen.")
-                except FileNotFoundError:
-                    st.error("Modell nicht gefunden — App neu starten.")
-                except Exception as exc:
-                    st.error(f"Simulationsfehler: {exc}")
+        if st.button("Optimale Strategie berechnen", type="primary", use_container_width=True):
+            with st.spinner("KI simuliert Rennszenarien..."):
+                # Hole die Umgebungstemperatur aus dem Session State
+                current_air_temp = st.session_state.settings['weather']
+                
+                # Aufruf der Hybrid-Funktion
+                result = optimize_hybrid_strategy(
+                    track_name=st.session_state.settings['track'], 
+                    total_laps=st.session_state.settings['total_laps'], 
+                    team=st.session_state.settings['team'], 
+                    start_compound=ai_start_tyre, 
+                    compound_2=ai_target_tyre, 
+                    air_temp=current_air_temp
+                )
+                
+                # Ergebnisse formatieren (Sekunden zu hh:mm:ss.ms)
+                def fmt_time(sec):
+                    m, s = divmod(sec, 60)
+                    h, m = divmod(m, 60)
+                    if h > 0: return f"{int(h)}h {int(m)}m {s:.2f}s"
+                    return f"{int(m)}m {s:.2f}s"
 
-    st.markdown("---")
-
-    if st.button("🏁  SIMULATION STARTEN", type="primary", width='stretch'):
-        st.session_state.track    = track
-        st.session_state.air_temp = air_temp
-        st.session_state.race_started = True
-        st.session_state.player   = Car(team, track, tire_start)
-        st.session_state.total_laps = laps
-        st.session_state.opponents  = create_opponents(team, track, laps)
-        st.rerun()
+                st.markdown("---")
+                st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
+                st.write(f"⏱️ **Geschätzte Gesamtzeit:** {fmt_time(result['total_time'])}")
+                
+                if result['recommendation'] == "2-Stop":
+                    st.info(f"💡 Eine 2-Stopp-Strategie ist voraussichtlich **{result['time_saved']:.2f} Sekunden schneller** als ein 1-Stopp.")
+                    st.write(f"🛞 **Start:** {ai_start_tyre}")
+                    st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
+                    st.write(f"🛑 **Stopp 2 (Runde {result['pit2_lap']}):** Wechsel auf {result['pit2_tyre']} 🤖 *(KI-Wahl)*")
+                else:
+                    st.info(f"💡 Eine 1-Stopp-Strategie ist voraussichtlich **{result['time_saved']:.2f} Sekunden schneller** als ein 2-Stopp.")
+                    st.write(f"🛞 **Start:** {ai_start_tyre}")
+                    st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
+                    st.write("🏁 Durchfahren bis ins Ziel.")
 
 
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────

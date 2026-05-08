@@ -508,12 +508,8 @@ def _tire_selector(session_key: str, default: str = "SOFT", disabled_tire: str =
 
 
 def render_setup_page():
-    # Kopfzeile
-    st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
     st.markdown('<div class="f1-eyebrow">Race Strategy Simulator</div>', unsafe_allow_html=True)
-    st.markdown('<div class="f1-heading">Neue Simulation</div>', unsafe_allow_html=True)
-    st.markdown('<div class="f1-sub">Triff die richtigen Entscheidungen. Schlage die Konkurrenz. Führe dein Team zum Sieg.</div>', unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown('<div class="f1-header">RACE STRATEGY<br>SIMULATOR</div>', unsafe_allow_html=True)
 
     team = _team_selector()
     st.markdown("---")
@@ -545,59 +541,70 @@ def render_setup_page():
             step=1, format="%d°C", label_visibility="collapsed",
             key="air_temp_select",
         )
-        pass  # no sub-label needed under slider
 
     st.markdown("---")
 
-    # KI-Stratege Briefing — Zielreifen ist hier integriert, da er nur dafür benötigt wird
+    # --- KI-Stratege Briefing ---
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
-# --- NEW HYBRID STRATEGY PREDICTOR ---
     with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
-        st.markdown("<p style='color:#ccc; font-size:0.9rem;'>Wähle den Startreifen und den Ziel-Reifen für den ersten Stopp. Die KI simuliert den Verschleiß und entscheidet, ob ein zweiter Stopp notwendig ist.</p>", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="f1-sub">Wähle den Zielreifen für den 1. Stopp. Die KI simuliert den Verschleiß und entscheidet, ob ein 2. Stopp notwendig ist.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN (1. STOPP)</div>', unsafe_allow_html=True)
         
-        ai_col1, ai_col2 = st.columns(2)
-        with ai_col1:
-            ai_start_tyre = st.selectbox("Startreifen", ["SOFT", "MEDIUM", "HARD"], key="ai_start")
-        with ai_col2:
-            ai_target_tyre = st.selectbox("Ziel-Reifen (Stopp 1)", ["SOFT", "MEDIUM", "HARD"], key="ai_target")
+        ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=tire_start)
 
-        if st.button("Optimale Strategie berechnen", type="primary", use_container_width=True):
+        if st.button("Optimale Strategie berechnen", width='stretch'):
             with st.spinner("KI simuliert Rennszenarien..."):
-                # Hole die Umgebungstemperatur aus dem Session State
-                current_air_temp = st.session_state.settings['weather']
-                
-                # Aufruf der Hybrid-Funktion
-                result = optimize_hybrid_strategy(
-                    track_name=st.session_state.settings['track'], 
-                    total_laps=st.session_state.settings['total_laps'], 
-                    team=st.session_state.settings['team'], 
-                    start_compound=ai_start_tyre, 
-                    compound_2=ai_target_tyre, 
-                    air_temp=current_air_temp
-                )
-                
-                # Ergebnisse formatieren (Sekunden zu hh:mm:ss.ms)
-                def fmt_time(sec):
-                    m, s = divmod(sec, 60)
-                    h, m = divmod(m, 60)
-                    if h > 0: return f"{int(h)}h {int(m)}m {s:.2f}s"
-                    return f"{int(m)}m {s:.2f}s"
+                try:
+                    from strategy_optimizer import optimize_hybrid_strategy
+                    
+                    result = optimize_hybrid_strategy(
+                        track_name=track, 
+                        total_laps=laps, 
+                        team=team, 
+                        start_compound=tire_start, 
+                        compound_2=ai_target_tyre, 
+                        air_temp=air_temp
+                    )
+                    
+                    def fmt_time(sec):
+                        m, s = divmod(sec, 60)
+                        h, m = divmod(m, 60)
+                        if h > 0: return f"{int(h)}h {int(m)}m {s:.2f}s"
+                        return f"{int(m)}m {s:.2f}s"
 
-                st.markdown("---")
-                st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
-                st.write(f"⏱️ **Geschätzte Gesamtzeit:** {fmt_time(result['total_time'])}")
-                
-                if result['recommendation'] == "2-Stop":
-                    st.info(f"💡 Eine 2-Stopp-Strategie ist voraussichtlich **{result['time_saved']:.2f} Sekunden schneller** als ein 1-Stopp.")
-                    st.write(f"🛞 **Start:** {ai_start_tyre}")
-                    st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
-                    st.write(f"🛑 **Stopp 2 (Runde {result['pit2_lap']}):** Wechsel auf {result['pit2_tyre']} 🤖 *(KI-Wahl)*")
-                else:
-                    st.info(f"💡 Eine 1-Stopp-Strategie ist voraussichtlich **{result['time_saved']:.2f} Sekunden schneller** als ein 2-Stopp.")
-                    st.write(f"🛞 **Start:** {ai_start_tyre}")
-                    st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
-                    st.write("🏁 Durchfahren bis ins Ziel.")
+                    st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
+                    st.write(f"⏱️ **Geschätzte Gesamtzeit:** {fmt_time(result['total_time'])}")
+                    
+                    if result['recommendation'] == "2-Stop":
+                        st.info(f"💡 Ein 2-Stopp ist voraussichtlich **{result['time_saved']:.2f} Sek. schneller** als ein 1-Stopp.")
+                        st.write(f"🛞 **Start:** {tire_start}")
+                        st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
+                        st.write(f"🛑 **Stopp 2 (Runde {result['pit2_lap']}):** Wechsel auf {result['pit2_tyre']} 🤖 *(KI-Wahl)*")
+                    else:
+                        st.info(f"💡 Ein 1-Stopp ist voraussichtlich **{result['time_saved']:.2f} Sek. schneller** als ein 2-Stopp.")
+                        st.write(f"🛞 **Start:** {tire_start}")
+                        st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
+                        st.write("🏁 Durchfahren bis ins Ziel.")
+                        
+                except Exception as exc:
+                    st.error(f"Simulationsfehler: {exc}")
+
+    st.markdown("---")
+
+    if st.button("🏁  SIMULATION STARTEN", type="primary", width='stretch'):
+        st.session_state.track    = track
+        st.session_state.air_temp = air_temp
+        st.session_state.race_started = True
+        st.session_state.player   = Car(team, track, tire_start)
+        st.session_state.total_laps = laps
+        st.session_state.opponents  = create_opponents(team, track, laps)
+        st.rerun()
+
+# ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
 
 
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────

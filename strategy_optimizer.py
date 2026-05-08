@@ -158,7 +158,8 @@ def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compo
     # Test all laps for the 1st pit stop
     for pit1 in range(min_stint, total_laps - min_stint):
         pit_stops = [{'lap': pit1, 'compound': compound_2}]
-        time = simulate_race_time(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
+        # VERWENDET JETZT DIE NEUE FUNKTION:
+        time = simulate_race_time_multi(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
         
         if time < best_1_stop_time:
             best_1_stop_time = time
@@ -185,7 +186,8 @@ def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compo
                     {'lap': pit2, 'compound': comp3}
                 ]
                 
-                time = simulate_race_time(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
+                # VERWENDET JETZT DIE NEUE FUNKTION:
+                time = simulate_race_time_multi(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
                 
                 if time < best_2_stop_time:
                     best_2_stop_time = time
@@ -198,7 +200,7 @@ def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compo
     if best_2_stop_time < best_1_stop_time:
         return {
             "recommendation": "2-Stop",
-            "time_saved": best_1_stop_time - best_2_stop_time, # How much faster it is
+            "time_saved": best_1_stop_time - best_2_stop_time, 
             "total_time": best_2_stop_time,
             "pit1_lap": best_2_stop_pit1,
             "pit1_tyre": compound_2,

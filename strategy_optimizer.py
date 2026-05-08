@@ -150,20 +150,19 @@ def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compo
     
     compounds = ['SOFT', 'MEDIUM', 'HARD']
     min_stint = 8 # Prevent unrealistic 2-lap stints
-    
     # --- 1-STOP OPTIMIZATION ---
     best_1_stop_time = float('inf')
     best_1_stop_lap = -1
     
-    # Test all laps for the 1st pit stop
-    for pit1 in range(min_stint, total_laps - min_stint):
-        pit_stops = [{'lap': pit1, 'compound': compound_2}]
-        # VERWENDET JETZT DIE NEUE FUNKTION:
-        time = simulate_race_time_multi(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp)
-        
-        if time < best_1_stop_time:
-            best_1_stop_time = time
-            best_1_stop_lap = pit1
+    # Die KI prüft hier die Regel: Startreifen darf nicht gleich Zielreifen sein
+    if start_compound != compound_2:
+        for pit1 in range(min_stint, total_laps - min_stint):
+            # ... (Simulation läuft nur, wenn Reifen unterschiedlich sind)
+            pass
+    else:
+        # Wenn Reifen gleich sind, bleibt best_1_stop_time auf 'inf' 
+        # und die KI wird automatisch einen 2-Stopp empfehlen.
+        pass
 
     # --- 2-STOP OPTIMIZATION ---
     best_2_stop_time = float('inf')

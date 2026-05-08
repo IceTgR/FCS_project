@@ -548,6 +548,10 @@ def render_setup_page():
 
     st.markdown("---")
 
+    # Regel-Hinweis hinzufügen
+    st.info("💡 **FIA Reglement:** Bei trockenen Bedingungen müssen während des Rennens mindestens zwei verschiedene Reifenmischungen verwendet werden.")
+
+
     # --- KI-Stratege Briefing ---
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
@@ -558,7 +562,7 @@ def render_setup_page():
         )
         st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN (1. STOPP)</div>', unsafe_allow_html=True)
         
-        ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=tire_start)
+        ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=None)
 
         if st.button("Optimale Strategie berechnen", width='stretch'):
             with st.spinner("KI simuliert Rennszenarien..."):

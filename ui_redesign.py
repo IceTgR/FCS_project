@@ -1,4 +1,4 @@
-"""Redesigned F1 Race Strategy Simulator UI — dark F1-inspired theme, German UI."""
+"""Haupt-UI des F1 Race Strategy Simulators: Einstellungsseite, Rennseite und Live-Daten."""
 
 import time
 
@@ -120,6 +120,7 @@ def _build_live_standings(player, opponents) -> pd.DataFrame:
 # ─── CSS ──────────────────────────────────────────────────────────────────────
 
 def inject_css():
+    """Injiziert globales CSS für das dunkle F1-Theme."""
     st.markdown("""
     <style>
     /* ── Globaler dunkler Hintergrund ── */
@@ -388,6 +389,7 @@ def inject_css():
 # ─── Bootstrap-Hilfsfunktionen ────────────────────────────────────────────────
 
 def make_bootstrap_placeholder():
+    """Zeigt einen Ladebildschirm beim ersten Start und gibt den Placeholder zurück."""
     ph = st.empty()
     ph.markdown("""
     <div style="min-height:75vh;display:flex;flex-direction:column;
@@ -411,6 +413,7 @@ def make_bootstrap_placeholder():
 
 
 def show_bootstrap_result(bootstrap_status):
+    """Zeigt eine Statuszeile nach erfolgreichem Bootstrap (DB + Modelle)."""
     import os
     from train_models import TRACK_LIST
 
@@ -442,6 +445,7 @@ def show_bootstrap_result(bootstrap_status):
 # ─── Seite 1 — Einstellungen ──────────────────────────────────────────────────
 
 def _team_selector():
+    """Zeigt die fünf Team-Kacheln und gibt das gewählte Team zurück."""
     if "team_player" not in st.session_state:
         st.session_state.team_player = "Ferrari"
 
@@ -508,6 +512,7 @@ def _tire_selector(session_key: str, default: str = "SOFT", disabled_tire: str =
 
 
 def render_setup_page():
+    """Rendert die Einstellungsseite (Team, Strecke, Startreifen, KI-Briefing)."""
     # Kopfzeile
     st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
     st.markdown('<div class="f1-eyebrow">Race Strategy Simulator</div>', unsafe_allow_html=True)
@@ -618,6 +623,7 @@ def render_setup_page():
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
 
 def _tire_html(compound, age=None):
+    """Gibt ein HTML-Reifenabzeichen mit optionalem Alter zurück."""
     c   = TIRE_COLORS.get(compound, "#fff")
     lbl = TIRE_LABELS.get(compound, compound[0])
     age_str = f"&nbsp;·&nbsp;{age} Rdn." if age is not None else ""
@@ -629,6 +635,7 @@ def _tire_html(compound, age=None):
 
 
 def _do_continue(player, total_laps):
+    """Verarbeitet eine normale Runde (ohne Boxenstopp) für Spieler und Gegner."""
     roll_safety_event()
     apply_safety_event_effect(player)
     player.advance_lap(st.session_state.safety_event_status)
@@ -648,6 +655,7 @@ def _do_continue(player, total_laps):
 
 
 def _do_pit(player, total_laps):
+    """Führt einen Boxenstopp für den Spieler durch und lässt Gegner gleichzeitig weiterfahren."""
     new_tire = st.session_state.pitstop_tire_choice
     roll_safety_event()
     apply_safety_event_effect(player)
@@ -672,6 +680,7 @@ def _do_pit(player, total_laps):
 
 
 def _race_summary(player, total_laps, opponents):
+    """Zeigt Rennergebnis, Rundenzeitendiagramm und Endrangliste nach Rennende."""
     history = player.race_history
     total_s = player.total_time
     m   = int(total_s // 60)
@@ -740,6 +749,7 @@ def _race_summary(player, total_laps, opponents):
 
 @st.fragment(run_every=1)
 def _race_fragment():
+    """Sekündlich aktualisiertes Fragment: Rennsteuerung, Live-Daten und automatisches Weiterschalten."""
     player     = st.session_state.player
     total_laps = st.session_state.total_laps
     opponents  = st.session_state.get("opponents", [])
@@ -957,6 +967,7 @@ def _race_fragment():
 
 
 def render_race_page():
+    """Rendert die Rennseite mit Header, Zurück-Button und dem Live-Renn-Fragment."""
     hdr_l, hdr_r = st.columns([4, 1])
     with hdr_l:
         st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
@@ -990,6 +1001,7 @@ def render_race_page():
 # ─── App-Router ───────────────────────────────────────────────────────────────
 
 def render_app():
+    """Hauptrouter: leitet zur Rennseite oder Einstellungsseite weiter."""
     if st.session_state.get("race_started"):
         render_race_page()
     else:

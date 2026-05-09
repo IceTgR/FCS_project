@@ -1,9 +1,9 @@
+"""FastF1-Datenabruf mit Rate-Limit-Handling und Speicherung in SQLite."""
 import fastf1
 import sqlite3
 import pandas as pd
 import os
 import time
-import re
 from fastf1.req import RateLimitExceededError
 
 _RATE_LIMITED_OCCURRED = False
@@ -12,6 +12,7 @@ _RATE_LIMIT_RECOVERED_SIGNAL = '__FASTF1_RATE_LIMIT_RECOVERED__'
 
 
 def _format_wait_seconds(wait_seconds):
+    """Formatiert Sekunden als lesbare Zeichenkette (z.B. 'ca. 2h 15m')."""
     wait_seconds = max(0, int(round(wait_seconds)))
     if wait_seconds >= 3600:
         hours = wait_seconds // 3600
@@ -32,6 +33,7 @@ def _format_wait_seconds(wait_seconds):
 
 
 def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
+    """Wartet die angegebene Zeit und sendet alle 30s ein Callback-Update an die UI."""
     global _MAX_WAIT_SECONDS
     wait_seconds = max(0, float(wait_seconds))
     if wait_seconds <= 0:
@@ -69,6 +71,7 @@ def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
 
 
 def _call_fastf1_with_retry(description, func, progress_callback=None):
+    """Führt func() aus und wiederholt bei RateLimitExceededError mit exponentiellem Backoff."""
     transient_attempts = 0
     rate_limited_once = False
     while True:

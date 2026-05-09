@@ -1,4 +1,4 @@
-# Vorverarbeitung von F1-Daten für ML-Modell-Training.
+"""Vorverarbeitung der F1-Daten aus SQLite: Normalisierung, Filterung und Outlier-Entfernung."""
 import sqlite3
 import pandas as pd
 

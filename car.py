@@ -1,10 +1,9 @@
-"""Auto-Modul mit Car-Klasse für F1-Rennverhalten."""
+"""Auto-Klasse für einen F1-Rennwagen: Rundenzeit-Vorhersage, Reifenverschleiß und Boxenstopp-Logik."""
 
 import joblib
 import pandas as pd
 import os
 import random
-from ML_lap_times import train_dry_models
 
 class Car:
     """Repräsentiert einen F1-Rennwagen mit Leistung und Rennhistorie."""
@@ -42,7 +41,7 @@ class Car:
     def tire(self, value):
         """Setzt die Reifenmischung (SOFT, MEDIUM, HARD)."""
         if value not in ["SOFT", "MEDIUM", "HARD"]:
-            raise ValueError("Tire must be 'SOFT', 'MEDIUM', or 'HARD'.")
+            raise ValueError("Ungültige Reifenmischung. Erlaubt: 'SOFT', 'MEDIUM', 'HARD'.")
         self._tire = value
 
     @property
@@ -54,7 +53,7 @@ class Car:
     def tire_age(self, value):
         """Setzt das Reifenalter."""
         if value < 0:
-            raise ValueError("Tire age cannot be negative.")
+            raise ValueError("Reifenalter darf nicht negativ sein.")
         self._tire_age = value
 
     @property
@@ -66,7 +65,7 @@ class Car:
     def lap(self, value):
         """Setzt die aktuelle Rundennummer."""
         if value < 1:
-            raise ValueError("Lap must be at least 1.")
+            raise ValueError("Rundennummer muss mindestens 1 sein.")
         self._lap = value
 
     @property
@@ -78,7 +77,7 @@ class Car:
     def lap_time(self, value):
         """Setzt die Rundenzeit in Sekunden."""
         if value < 0:
-            raise ValueError("Lap time cannot be negative.")
+            raise ValueError("Rundenzeit darf nicht negativ sein.")
         self._lap_time = value
 
     @property
@@ -90,7 +89,7 @@ class Car:
     def race_history(self, value):
         """Setzt die Rennhistorie."""
         if not isinstance(value, list):
-            raise ValueError("Race history must be a list of lap times.")
+            raise ValueError("Rennhistorie muss eine Liste sein.")
         self._race_history = value
 
     @property
@@ -102,7 +101,7 @@ class Car:
     def total_time(self, value):
         """Setzt die Gesamtzeit des Rennens."""
         if value < 0:
-            raise ValueError("Total time cannot be negative.")
+            raise ValueError("Gesamtzeit darf nicht negativ sein.")
         self._total_time = value
 
     @property
@@ -114,7 +113,7 @@ class Car:
     def pitstop_counter(self, value):
         """Setzt die Anzahl der Boxenstopps."""
         if value < 0:
-            raise ValueError("Pitstop counter cannot be negative.")
+            raise ValueError("Boxenstopp-Zähler darf nicht negativ sein.")
         self._pitstop_counter = value 
 
     @property
@@ -126,7 +125,7 @@ class Car:
     def outlap_pending(self, value):
         """Setzt die ausstehende Outlap."""
         if not isinstance(value, bool):
-            raise ValueError("outlap_pending must be a boolean value.")
+            raise ValueError("outlap_pending muss ein Boolean sein.")
         self._outlap_pending = value
 
     @property
@@ -245,13 +244,13 @@ class Car:
         return penalty
 
     def predict_lap_time(self, air_temp=25, is_raining=False):
-        """Vorhersage der Rundenzeit basierend auf dem entsprechenden ML Modell."""
+        """Sagt die Rundenzeit per ML-Modell vorher und wendet Outlap- und Verschleiß-Aufschläge an."""
 
-        if is_raining == False:
+        if not is_raining:
             track_id = self.track.replace(' ', '_')
             model_path = f'models/dry/rf_{track_id}.pkl'
             if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Model file not found for track {self.track}. Please train the model first.")
+                raise FileNotFoundError(f"Kein Modell für Strecke '{self.track}' gefunden. Bitte zuerst trainieren.")
             model = joblib.load(model_path)
             saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
 
@@ -279,18 +278,7 @@ class Car:
             # Manuellen Reifenverschleiß-Aufschlag auf die ML-Basis addieren.
             prediction += self.tire_wear_penalty()
 
-            # if self.safety_car:
-            # prediction *= 1.5 # Safety car conditions increase lap time by 50%
-
             self.lap_time = prediction
             return prediction
 
-    def __repr__(self):
-        """Gibt die technische String-Darstellung zurück."""
-        return f"Car(driver={self.driver}, team={self.team}, tire={self.tire}, tire_age={self.tire_age})"
-    
-    def __str__(self):
-        """Gibt die lesbare String-Darstellung zurück."""
-        return f"{self.driver} is driving for {self.team} with {self.tire} tires that are {self.tire_age} laps old."
-    
-    
+

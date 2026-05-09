@@ -809,8 +809,8 @@ def _race_fragment():
             </div>
             """, unsafe_allow_html=True)
 
-        # Countdown + Geschwindigkeitsregler
-        st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
+        # Geschwindigkeitsregler + Countdown
+        st.markdown('<div class="section-label">SIMULATIONSGESCHWINDIGKEIT</div>', unsafe_allow_html=True)
         st.slider(
             "Simulationsgeschwindigkeit",
             min_value=1, max_value=15, step=1,
@@ -818,6 +818,7 @@ def _race_fragment():
             key="sim_speed",
             label_visibility="collapsed",
         )
+        st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
 
         st.markdown('<div class="section-label">REIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
         _tire_selector("pitstop_tire_choice", default="SOFT", disabled_tire=player.tire)

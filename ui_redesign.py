@@ -609,9 +609,6 @@ def render_setup_page():
 
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
 
-
-# ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
-
 def _tire_html(compound, age=None):
     """Gibt ein HTML-Reifenabzeichen mit optionalem Alter zurück."""
     c   = TIRE_COLORS.get(compound, "#fff")
@@ -839,6 +836,7 @@ def _race_fragment():
         if ki:
             t1c = TIRE_COLORS.get(ki.get('pit1_tyre', ''), '#fff')
             line = (
+                f'KI-Empfehlung: '
                 f'<b>{ki["recommendation"]}</b>: '
                 f'Stopp R{ki["pit1_lap"]} → <span style="color:{t1c};font-weight:900;">{ki["pit1_tyre"]}</span>'
             )

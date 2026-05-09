@@ -634,25 +634,6 @@ def _tire_html(compound, age=None):
     )
 
 
-def _do_continue(player, total_laps):
-    """Verarbeitet eine normale Runde (ohne Boxenstopp) für Spieler und Gegner."""
-    roll_safety_event()
-    apply_safety_event_effect(player)
-    player.advance_lap(st.session_state.safety_event_status)
-    if hasattr(st.session_state, "opponents"):
-        advance_opponents(
-            st.session_state.opponents, total_laps,
-            st.session_state.safety_event_status,
-            get_safety_event_lap_multiplier(),
-            get_safety_event_pitstop_multiplier(),
-        )
-        if st.session_state.safety_event_status == 'SAFETYCAR':
-            compress_sc_field(player, st.session_state.opponents)
-    resolve_safety_event()
-    st.session_state.lap_start_time  = time.time()
-    st.session_state.lap_started_for = player.lap
-    st.rerun(scope="app")
-
 
 def _do_pit(player, total_laps):
     """Führt einen Boxenstopp für den Spieler durch und lässt Gegner gleichzeitig weiterfahren."""
@@ -844,7 +825,7 @@ def _race_fragment():
         st.markdown('<div class="section-label">SIMULATIONSGESCHWINDIGKEIT</div>', unsafe_allow_html=True)
         st.slider(
             "Simulationsgeschwindigkeit",
-            min_value=1, max_value=15, step=1,
+            min_value=1, max_value=15, value=5, step=1,
             format="%ds",
             key="sim_speed",
             label_visibility="collapsed",
@@ -873,13 +854,8 @@ def _race_fragment():
         except Exception:
             pass  # Kein Modell vorhanden — still ignorieren
 
-        btn_l, btn_r = st.columns(2)
-        with btn_l:
-            if st.button("▶  Nächste Runde", key="continue_btn", width='stretch'):
-                _do_continue(player, total_laps)
-        with btn_r:
-            if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
-                _do_pit(player, total_laps)
+        if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
+            _do_pit(player, total_laps)
 
     # ── RECHTS: Datenpanels ───────────────────────────────────────────────
     with right:

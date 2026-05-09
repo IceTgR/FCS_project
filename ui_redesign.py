@@ -559,7 +559,7 @@ def render_setup_page():
 
     with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
         st.markdown(
-            '<div class="f1-sub">Die KI simuliert alle Reifenkombinationen und empfiehlt automatisch die schnellste Gesamtstrategie.</div>',
+            '<div class="f1-sub">Die KI simuliert alle Reifenkombinationen und empfiehlt automatisch die schnellste Gesamtstrategie basierend auf dem gewählten Startreifen.</div>',
             unsafe_allow_html=True,
         )
 

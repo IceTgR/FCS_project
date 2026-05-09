@@ -16,7 +16,7 @@ def train_dry_models(df_dry):
     for track in tracks:
         track_df = df_dry[df_dry['Track'] == track].copy()
 
-        # Team und Compound sind kategorial → One-Hot-Encoding.
+        # Team und Compound sind kategorial, weshalb One-Hot-Encoding angewendet wird.
         features = ['LapNumber', 'TyreLife', 'AirTemp', 'Team', 'Compound']
         X = pd.get_dummies(track_df[features], columns=['Team', 'Compound'])
         y = track_df['LapTimeSec']

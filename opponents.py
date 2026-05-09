@@ -213,25 +213,3 @@ def advance_opponents(opponents, total_laps, safety_event_status, lap_multiplier
             car.advance_lap(safety_event_status)
 
 
-def build_opponent_table(opponents, total_laps):
-    """Gibt die Gegnerdaten für die Tabelle zurück."""
-    rows = []
-    for opponent in opponents:
-        # Die Tabelle soll den aktuellen Zustand der Gegner kompakt zeigen.
-        last_lap_time = opponent.car.race_history[-1]['Rundenzeit'] if opponent.car.race_history else 0.0
-        rows.append(
-            {
-                'Team': opponent.team,
-                'Start-Reifen': opponent.starting_tire,
-                'Aktuelle Runde': opponent.car.lap,
-                'Boxenstopps': opponent.car.pitstop_counter,
-                'Letzte Rundenzeit': round(last_lap_time, 2),
-                'Reifen': opponent.car.tire,
-                'Reifenalter': opponent.car.tire_age,
-                'Geplanter Boxenlap': opponent.pit_lap,
-                'Ziel-Reifenmischung': opponent.next_compound,
-                'Gesamtzeit': round(opponent.car.total_time, 2),
-                'Status': 'Beendet' if opponent.car.lap > total_laps else 'Im Rennen',
-            }
-        )
-    return rows

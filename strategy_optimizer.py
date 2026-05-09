@@ -95,37 +95,6 @@ def simulate_race_time_multi(model, train_cols, total_laps, team, start_compound
 
 
 @st.cache_data
-def find_optimal_pit_lap(track_name, total_laps, team, start_compound, next_compound, air_temp):
-    """Testet alle möglichen Stopp-Runden (10 bis total_laps-5) und gibt die beste zurück."""
-    try:
-        model, train_cols = load_track_model(track_name, "dry")
-    except FileNotFoundError:
-        # Kein Modell vorhanden: Mittelwert als Fallback.
-        return total_laps // 2
-
-    best_total_time = float('inf')
-    best_lap = 0
-
-    for pit_lap in range(10, total_laps - 5):
-        total_race_time = simulate_race_time(
-            model=model,
-            train_cols=train_cols,
-            total_laps=total_laps,
-            team=team,
-            start_compound=start_compound,
-            next_compound=next_compound,
-            pit_lap=pit_lap,
-            air_temp=air_temp,
-        )
-
-        if total_race_time < best_total_time:
-            best_total_time = total_race_time
-            best_lap = pit_lap
-
-    return best_lap
-
-
-@st.cache_data
 def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compound_2, air_temp):
     """Vergleicht 1-Stopp- und 2-Stopp-Strategien und gibt die schnellere mit allen Details zurück.
 

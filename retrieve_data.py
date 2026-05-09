@@ -30,8 +30,6 @@ def _format_wait_seconds(wait_seconds):
 
 
 
-
-
 def _sleep_with_progress(wait_seconds, progress_callback=None, prefix=''):
     """Wartet die angegebene Zeit und sendet alle 30s ein Callback-Update an die UI."""
     global _MAX_WAIT_SECONDS

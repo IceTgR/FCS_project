@@ -4,10 +4,10 @@ import time
 
 import pandas as pd
 import streamlit as st
-from strategy_optimizer import find_best_overall_strategy, find_optimal_pit_lap, optimize_hybrid_strategy
+from strategy_optimizer import find_best_overall_strategy
 
 from car import Car
-from opponents import advance_opponents, build_opponent_table, create_opponents
+from opponents import advance_opponents, create_opponents
 from racelogic import (
     apply_safety_event_effect,
     compress_sc_field,

@@ -192,3 +192,25 @@ def optimize_hybrid_strategy(track_name, total_laps, team, start_compound, compo
         "pit1_lap": best_1_stop_lap,
         "pit1_tyre": compound_2,
     }
+
+
+@st.cache_data
+def find_best_overall_strategy(track_name, total_laps, team, start_compound, air_temp):
+    """Testet alle möglichen compound_2-Varianten und gibt die insgesamt schnellste Strategie zurück."""
+    compounds = ['SOFT', 'MEDIUM', 'HARD']
+    best_result = None
+    best_time = float('inf')
+
+    for compound_2 in compounds:
+        try:
+            result = optimize_hybrid_strategy(
+                track_name, total_laps, team, start_compound, compound_2, air_temp
+            )
+            if result['total_time'] < best_time:
+                best_time = result['total_time']
+                best_result = dict(result)
+                best_result['compound_2'] = compound_2
+        except Exception:
+            continue
+
+    return best_result

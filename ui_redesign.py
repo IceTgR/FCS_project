@@ -1,4 +1,4 @@
-"""Redesigned F1 Race Strategy Simulator UI — dark F1-inspired theme, German UI."""
+"""Haupt-UI des F1 Race Strategy Simulators: Einstellungsseite, Rennseite und Live-Daten."""
 
 import time
 
@@ -16,7 +16,6 @@ from racelogic import (
     resolve_safety_event,
     roll_safety_event,
 )
-from strategy_optimizer import find_optimal_pit_lap
 
 # ─── Konstanten ───────────────────────────────────────────────────────────────
 
@@ -120,6 +119,7 @@ def _build_live_standings(player, opponents) -> pd.DataFrame:
 # ─── CSS ──────────────────────────────────────────────────────────────────────
 
 def inject_css():
+    """Injiziert globales CSS für das dunkle F1-Theme."""
     st.markdown("""
     <style>
     /* ── Globaler dunkler Hintergrund ── */
@@ -388,6 +388,7 @@ def inject_css():
 # ─── Bootstrap-Hilfsfunktionen ────────────────────────────────────────────────
 
 def make_bootstrap_placeholder():
+    """Zeigt einen Ladebildschirm beim ersten Start und gibt den Placeholder zurück."""
     ph = st.empty()
     ph.markdown("""
     <div style="min-height:75vh;display:flex;flex-direction:column;
@@ -411,6 +412,7 @@ def make_bootstrap_placeholder():
 
 
 def show_bootstrap_result(bootstrap_status):
+    """Zeigt eine Statuszeile nach erfolgreichem Bootstrap (DB + Modelle)."""
     import os
     from train_models import TRACK_LIST
 
@@ -442,6 +444,7 @@ def show_bootstrap_result(bootstrap_status):
 # ─── Seite 1 — Einstellungen ──────────────────────────────────────────────────
 
 def _team_selector():
+    """Zeigt die fünf Team-Kacheln und gibt das gewählte Team zurück."""
     if "team_player" not in st.session_state:
         st.session_state.team_player = "Ferrari"
 
@@ -508,6 +511,7 @@ def _tire_selector(session_key: str, default: str = "SOFT", disabled_tire: str =
 
 
 def render_setup_page():
+    """Rendert die Einstellungsseite (Team, Strecke, Startreifen, KI-Briefing)."""
     # Kopfzeile
     st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
     st.markdown('<div class="f1-eyebrow">Race Strategy Simulator</div>', unsafe_allow_html=True)
@@ -548,11 +552,9 @@ def render_setup_page():
 
     st.markdown("---")
 
-    # Regel-Hinweis hinzufügen
     st.info("💡 **FIA Reglement:** Bei trockenen Bedingungen müssen während des Rennens mindestens zwei verschiedene Reifenmischungen verwendet werden.")
 
-
-    # --- KI-Stratege Briefing ---
+    # KI-Stratege Briefing
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
     with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
@@ -561,32 +563,25 @@ def render_setup_page():
             unsafe_allow_html=True,
         )
         st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN (1. STOPP)</div>', unsafe_allow_html=True)
-        
         ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=None)
 
         if st.button("Optimale Strategie berechnen", width='stretch'):
-            with st.spinner("KI simuliert Rennszenarien..."):
+            with st.spinner("KI simuliert Rennszenarien…"):
                 try:
-                    from strategy_optimizer import optimize_hybrid_strategy
-                    
                     result = optimize_hybrid_strategy(
-                        track_name=track, 
-                        total_laps=laps, 
-                        team=team, 
-                        start_compound=tire_start, 
-                        compound_2=ai_target_tyre, 
-                        air_temp=air_temp
+                        track_name=track, total_laps=laps, team=team,
+                        start_compound=tire_start, compound_2=ai_target_tyre,
+                        air_temp=air_temp,
                     )
-                    
-                    def fmt_time(sec):
+
+                    def _fmt(sec):
                         m, s = divmod(sec, 60)
-                        h, m = divmod(m, 60)
-                        if h > 0: return f"{int(h)}h {int(m)}m {s:.2f}s"
                         return f"{int(m)}m {s:.2f}s"
 
                     st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
-                    st.write(f"⏱️ **Geschätzte Gesamtzeit:** {fmt_time(result['total_time'])}")
-                    
+                    st.write(f"⏱️ **Geschätzte Gesamtzeit:** {_fmt(result['total_time'])}")
+
+
                     if result['recommendation'] == "2-Stop":
                         st.info(f"💡 Ein 2-Stopp ist voraussichtlich **{result['time_saved']:.2f} Sek. schneller** als ein 1-Stopp.")
                         st.write(f"🛞 **Start:** {tire_start}")
@@ -597,7 +592,6 @@ def render_setup_page():
                         st.write(f"🛞 **Start:** {tire_start}")
                         st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
                         st.write("🏁 Durchfahren bis ins Ziel.")
-                        
                 except Exception as exc:
                     st.error(f"Simulationsfehler: {exc}")
 
@@ -618,6 +612,7 @@ def render_setup_page():
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
 
 def _tire_html(compound, age=None):
+    """Gibt ein HTML-Reifenabzeichen mit optionalem Alter zurück."""
     c   = TIRE_COLORS.get(compound, "#fff")
     lbl = TIRE_LABELS.get(compound, compound[0])
     age_str = f"&nbsp;·&nbsp;{age} Rdn." if age is not None else ""
@@ -628,26 +623,9 @@ def _tire_html(compound, age=None):
     )
 
 
-def _do_continue(player, total_laps):
-    roll_safety_event()
-    apply_safety_event_effect(player)
-    player.advance_lap(st.session_state.safety_event_status)
-    if hasattr(st.session_state, "opponents"):
-        advance_opponents(
-            st.session_state.opponents, total_laps,
-            st.session_state.safety_event_status,
-            get_safety_event_lap_multiplier(),
-            get_safety_event_pitstop_multiplier(),
-        )
-        if st.session_state.safety_event_status == 'SAFETYCAR':
-            compress_sc_field(player, st.session_state.opponents)
-    resolve_safety_event()
-    st.session_state.lap_start_time  = time.time()
-    st.session_state.lap_started_for = player.lap
-    st.rerun(scope="app")
-
 
 def _do_pit(player, total_laps):
+    """Führt einen Boxenstopp für den Spieler durch und lässt Gegner gleichzeitig weiterfahren."""
     new_tire = st.session_state.pitstop_tire_choice
     roll_safety_event()
     apply_safety_event_effect(player)
@@ -672,6 +650,7 @@ def _do_pit(player, total_laps):
 
 
 def _race_summary(player, total_laps, opponents):
+    """Zeigt Rennergebnis, Rundenzeitendiagramm und Endrangliste nach Rennende."""
     history = player.race_history
     total_s = player.total_time
     m   = int(total_s // 60)
@@ -740,6 +719,7 @@ def _race_summary(player, total_laps, opponents):
 
 @st.fragment(run_every=1)
 def _race_fragment():
+    """Sekündlich aktualisiertes Fragment: Rennsteuerung, Live-Daten und automatisches Weiterschalten."""
     player     = st.session_state.player
     total_laps = st.session_state.total_laps
     opponents  = st.session_state.get("opponents", [])
@@ -834,7 +814,7 @@ def _race_fragment():
         st.markdown('<div class="section-label">SIMULATIONSGESCHWINDIGKEIT</div>', unsafe_allow_html=True)
         st.slider(
             "Simulationsgeschwindigkeit",
-            min_value=1, max_value=15, step=1,
+            min_value=1, max_value=15, value=5, step=1,
             format="%ds",
             key="sim_speed",
             label_visibility="collapsed",
@@ -863,13 +843,8 @@ def _race_fragment():
         except Exception:
             pass  # Kein Modell vorhanden — still ignorieren
 
-        btn_l, btn_r = st.columns(2)
-        with btn_l:
-            if st.button("▶  Nächste Runde", key="continue_btn", width='stretch'):
-                _do_continue(player, total_laps)
-        with btn_r:
-            if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
-                _do_pit(player, total_laps)
+        if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
+            _do_pit(player, total_laps)
 
     # ── RECHTS: Datenpanels ───────────────────────────────────────────────
     with right:
@@ -957,6 +932,7 @@ def _race_fragment():
 
 
 def render_race_page():
+    """Rendert die Rennseite mit Header, Zurück-Button und dem Live-Renn-Fragment."""
     hdr_l, hdr_r = st.columns([4, 1])
     with hdr_l:
         st.markdown('<div class="f1-logo">F1</div>', unsafe_allow_html=True)
@@ -990,6 +966,7 @@ def render_race_page():
 # ─── App-Router ───────────────────────────────────────────────────────────────
 
 def render_app():
+    """Hauptrouter: leitet zur Rennseite oder Einstellungsseite weiter."""
     if st.session_state.get("race_started"):
         render_race_page()
     else:

@@ -4,7 +4,7 @@ import time
 
 import pandas as pd
 import streamlit as st
-from strategy_optimizer import find_optimal_pit_lap, optimize_hybrid_strategy
+from strategy_optimizer import find_best_overall_strategy, find_optimal_pit_lap, optimize_hybrid_strategy
 
 from car import Car
 from opponents import advance_opponents, build_opponent_table, create_opponents
@@ -559,19 +559,16 @@ def render_setup_page():
 
     with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
         st.markdown(
-            '<div class="f1-sub">Wähle den Zielreifen für den 1. Stopp. Die KI simuliert den Verschleiß und entscheidet, ob ein 2. Stopp notwendig ist.</div>',
+            '<div class="f1-sub">Die KI simuliert alle Reifenkombinationen und empfiehlt automatisch die schnellste Gesamtstrategie.</div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN (1. STOPP)</div>', unsafe_allow_html=True)
-        ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=None)
 
         if st.button("Optimale Strategie berechnen", width='stretch'):
-            with st.spinner("KI simuliert Rennszenarien…"):
+            with st.spinner("KI simuliert alle Rennszenarien…"):
                 try:
-                    result = optimize_hybrid_strategy(
+                    result = find_best_overall_strategy(
                         track_name=track, total_laps=laps, team=team,
-                        start_compound=tire_start, compound_2=ai_target_tyre,
-                        air_temp=air_temp,
+                        start_compound=tire_start, air_temp=air_temp,
                     )
 
                     def _fmt(sec):
@@ -580,7 +577,6 @@ def render_setup_page():
 
                     st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
                     st.write(f"⏱️ **Geschätzte Gesamtzeit:** {_fmt(result['total_time'])}")
-
 
                     if result['recommendation'] == "2-Stop":
                         st.info(f"💡 Ein 2-Stopp ist voraussichtlich **{result['time_saved']:.2f} Sek. schneller** als ein 1-Stopp.")
@@ -604,6 +600,11 @@ def render_setup_page():
         st.session_state.player   = Car(team, track, tire_start)
         st.session_state.total_laps = laps
         st.session_state.opponents  = create_opponents(team, track, laps)
+        # Strategie für Startreifen vorberechnen (gecacht → bei späteren Abrufen sofort verfügbar).
+        try:
+            st.session_state.ki_strategy = find_best_overall_strategy(track, laps, team, tire_start, air_temp)
+        except Exception:
+            st.session_state.ki_strategy = None
         st.rerun()
 
 # ─── Seite 2 — Rennen ─────────────────────────────────────────────────────────
@@ -644,6 +645,14 @@ def _do_pit(player, total_laps):
         if st.session_state.safety_event_status == 'SAFETYCAR':
             compress_sc_field(player, st.session_state.opponents)
     resolve_safety_event()
+    # Strategie für neuen Reifen nachladen (gecacht → sofort verfügbar).
+    try:
+        st.session_state.ki_strategy = find_best_overall_strategy(
+            st.session_state.track, total_laps, player.team,
+            new_tire, st.session_state.air_temp,
+        )
+    except Exception:
+        st.session_state.ki_strategy = None
     st.session_state.lap_start_time  = time.time()
     st.session_state.lap_started_for = player.lap
     st.rerun(scope="app")
@@ -667,7 +676,7 @@ def _race_summary(player, total_laps, opponents):
             <div style="margin-top:0.6rem;">
                 <div class="metric-tile" style="margin-bottom:0.6rem;">
                     <div class="mlabel">ENDPLATZIERUNG</div>
-                    <div class="mval" style="font-size:3rem;line-height:1;">{"DQ" if player.pitstop_counter == 0 else f"P{final_pos}"}</div>
+                    <div class="mval" style="font-size:3rem;line-height:1;">{"DQ" if len({r["Reifen"] for r in history}) < 2 else f"P{final_pos}"}</div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
                     <div class="metric-tile">
@@ -735,8 +744,9 @@ def _race_fragment():
 
     # Rennende
     if player.lap == total_laps + 1:
-        if player.pitstop_counter == 0:
-            st.markdown('<div class="banner-dsq">❌&nbsp; DISQUALIFIZIERT — Kein Boxenstopp absolviert</div>', unsafe_allow_html=True)
+        compounds_used = {r["Reifen"] for r in player.race_history}
+        if len(compounds_used) < 2:
+            st.markdown('<div class="banner-dsq">❌&nbsp; DISQUALIFIZIERT — Weniger als 2 verschiedene Reifenmischungen gefahren</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="banner-end">🏁&nbsp; RENNEN BEENDET — Glückwunsch!</div>', unsafe_allow_html=True)
         _race_summary(player, total_laps, opponents)
@@ -822,26 +832,28 @@ def _race_fragment():
         st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
 
         st.markdown('<div class="section-label">REIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
-        _tire_selector("pitstop_tire_choice", default="SOFT", disabled_tire=player.tire)
+        _tire_selector("pitstop_tire_choice", default="SOFT")
 
-        # KI-Empfehlung direkt für den gewählten Pitstop-Reifen
-        pit_choice = st.session_state.get("pitstop_tire_choice", "SOFT")
-        try:
-            best_lap = find_optimal_pit_lap(
-                track_name=track, total_laps=total_laps,
-                team=player.team, start_compound=player.tire,
-                next_compound=pit_choice, air_temp=air_temp,
+        # KI-Empfehlung aus vorberechneter Gesamtstrategie
+        ki = st.session_state.get("ki_strategy")
+        if ki:
+            t1c = TIRE_COLORS.get(ki.get('pit1_tyre', ''), '#fff')
+            line = (
+                f'<b>{ki["recommendation"]}</b>: '
+                f'Stopp R{ki["pit1_lap"]} → <span style="color:{t1c};font-weight:900;">{ki["pit1_tyre"]}</span>'
             )
+            if ki["recommendation"] == "2-Stop":
+                t2c = TIRE_COLORS.get(ki.get('pit2_tyre', ''), '#fff')
+                line += (
+                    f' · R{ki["pit2_lap"]} → '
+                    f'<span style="color:{t2c};font-weight:900;">{ki["pit2_tyre"]}</span> 🤖'
+                )
             st.markdown(
                 f'<div class="f1-card" style="padding:0.6rem 0.9rem;margin-bottom:0.5rem;">'
-                f'<div style="color:#fff;font-size:0.88rem;font-weight:700;">'
-                f'Empfehlung für <span style="color:{TIRE_COLORS[pit_choice]};font-weight:900;">{pit_choice}</span>: '
-                f'Pitstop in Runde <span style="color:#e10600;font-size:1.05rem;">{best_lap}</span>'
-                f'</div></div>',
+                f'<div style="color:#fff;font-size:0.85rem;">{line}</div>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
-        except Exception:
-            pass  # Kein Modell vorhanden — still ignorieren
 
         if st.button("🔧  PIT NOW", key="pit_btn", type="primary", width='stretch'):
             _do_pit(player, total_laps)

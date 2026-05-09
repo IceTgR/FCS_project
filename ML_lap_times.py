@@ -35,7 +35,7 @@ def train_dry_models(df_dry):
         mae = mean_absolute_error(y_test, model.predict(X_test))
         print(f'MAE {track}: {mae:.3f}s')
 
-        # Leerzeichen → Unterstrich für Dateinamen.
+        # Leerzeichen zu Unterstrich für Dateinamen.
         track_id = track.replace(' ', '_')
         joblib.dump(model, f'models/dry/rf_{track_id}.pkl')
         joblib.dump(X.columns.tolist(), f'models/dry/cols_{track_id}.pkl')

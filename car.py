@@ -1,4 +1,4 @@
-"""Auto-Klasse für einen F1-Rennwagen: Rundenzeit-Vorhersage, Reifenverschleiß und Boxenstopp-Logik."""
+"""Car-Klasse für einen F1-Rennwagen: Rundenzeit-Vorhersage, Reifenverschleiß und Boxenstopp-Logik."""
 
 import joblib
 import pandas as pd
@@ -199,12 +199,10 @@ class Car:
         self.tire_age += laps
 
     def tire_wear_penalty(self):
-        """Gibt einen manuellen Reifenverschleiß-Aufschlag in Sekunden zurück.
-
-        Außerhalb des ML-Modells, weil sehr lange Stints in den Trainingsdaten
-        unterrepräsentiert sind. Nach einem Mischungs-Schwellwert steigt der
-        Aufschlag quadratisch an; ein kleiner Zufallsfaktor variiert das Ergebnis.
-        """
+        """Gibt einen manuellen Reifenverschleiß-Aufschlag in Sekunden zurück."""
+        # Ausserhalb des ML-Modells implementiert, weil sehr lange Stints in den Trainingsdaten
+        # unterrepräsentiert sind. Nach einem Mischungs-Schwellwert steigt der
+        # Aufschlag quadratisch an; ein kleiner Zufallsfaktor variiert das Ergebnis.
         wear_profiles = {
             'SOFT': {
                 'threshold': 10,

@@ -27,6 +27,7 @@ if 'race_started' not in st.session_state:
     st.session_state.race_started = False
 
 # ── Bootstrap (einmalig beim ersten Start) ───────────────────────────────────
+# Reduzieren der FastF1-Log-Ausgabe auf WARNING, damit die Konsole nicht mit INFO-Logs überflutet wird.
 if 'ml_bootstrap_done' not in st.session_state:
     for name in _FASTF1_LOGGER_NAMES:
         logging.getLogger(name).setLevel(logging.WARNING)

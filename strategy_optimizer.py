@@ -58,14 +58,11 @@ def simulate_race_time(model, train_cols, total_laps, team, start_compound, next
 
 
 def simulate_race_time_multi(model, train_cols, total_laps, team, start_compound, pit_stops, air_temp, pit_loss_sec=22.0):
-    """Berechnet die simulierte Gesamtzeit für beliebig viele Boxenstopps.
-
-    pit_stops: Liste von {'lap': int, 'compound': str}, nach Runde sortiert.
-    """
+    """Berechnet die simulierte Gesamtzeit für beliebig viele Boxenstopps."""
     total_time = 0.0
     tyre_life = 1
     current_compound = start_compound
-    pit_stops = sorted(pit_stops, key=lambda x: x['lap'])
+    pit_stops = sorted(pit_stops, key=lambda x: x['lap']) # pit_stops: Liste von {'lap': int, 'compound': str}, nach Runde sortiert.
     next_stop_idx = 0
 
     laps_data = []

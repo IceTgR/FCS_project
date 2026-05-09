@@ -8,7 +8,7 @@ def roll_safety_event():
     """Würfelt zu Rundenbeginn, ob ein SC oder VSC ausgelöst wird.
 
     Läuft nur, wenn kein Event aktiv ist. Wahrscheinlichkeiten: SC 1.5%, VSC 2.5%.
-    Dauer wird zufällig in session_state gespeichert.
+    Zufällige Dauer wird in session_state gespeichert.
     """
     if not hasattr(st.session_state, 'safety_event_duration'):
         st.session_state.safety_event_duration = 0

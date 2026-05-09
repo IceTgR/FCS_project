@@ -6,6 +6,8 @@ import os
 import time
 from fastf1.req import RateLimitExceededError
 
+
+# Handling von FastF1 API-Rate-Limit:
 _RATE_LIMITED_OCCURRED = False
 _MAX_WAIT_SECONDS = 0
 _RATE_LIMIT_RECOVERED_SIGNAL = '__FASTF1_RATE_LIMIT_RECOVERED__'
@@ -109,6 +111,8 @@ def _call_fastf1_with_retry(description, func, progress_callback=None):
         except Exception:
             raise
 
+
+# Abruf der Daten und speichern in SQLite DB:
 
 def fastf1_to_sql(years, track_list, team_list, progress_callback=None):
     '''Lädt die DB von fastf1 und speichert sie in SQLite-DB, damit schnellere Abfragen möglich sind.'''

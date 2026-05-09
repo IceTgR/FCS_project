@@ -838,12 +838,12 @@ def _race_fragment():
             line = (
                 f'KI-Empfehlung: '
                 f'<b>{ki["recommendation"]}</b>: '
-                f'Stopp R{ki["pit1_lap"]} → <span style="color:{t1c};font-weight:900;">{ki["pit1_tyre"]}</span>'
+                f'Runde {ki["pit1_lap"]} → <span style="color:{t1c};font-weight:900;">{ki["pit1_tyre"]}</span>'
             )
             if ki["recommendation"] == "2-Stop":
                 t2c = TIRE_COLORS.get(ki.get('pit2_tyre', ''), '#fff')
                 line += (
-                    f' · R{ki["pit2_lap"]} → '
+                    f' · Runde {ki["pit2_lap"]} → '
                     f'<span style="color:{t2c};font-weight:900;">{ki["pit2_tyre"]}</span> 🤖'
                 )
             st.markdown(

@@ -16,7 +16,6 @@ from racelogic import (
     resolve_safety_event,
     roll_safety_event,
 )
-from strategy_optimizer import find_optimal_pit_lap
 
 # ─── Konstanten ───────────────────────────────────────────────────────────────
 
@@ -553,11 +552,9 @@ def render_setup_page():
 
     st.markdown("---")
 
-    # Regel-Hinweis hinzufügen
     st.info("💡 **FIA Reglement:** Bei trockenen Bedingungen müssen während des Rennens mindestens zwei verschiedene Reifenmischungen verwendet werden.")
 
-
-    # --- KI-Stratege Briefing ---
+    # KI-Stratege Briefing
     st.markdown('<div class="section-label">KI-STRATEGE BRIEFING</div>', unsafe_allow_html=True)
 
     with st.expander("🏎  KI: Smarte Strategie-Vorhersage", expanded=False):
@@ -566,32 +563,25 @@ def render_setup_page():
             unsafe_allow_html=True,
         )
         st.markdown('<div class="section-label" style="margin-top:0.75rem;">ZIELREIFEN (1. STOPP)</div>', unsafe_allow_html=True)
-        
         ai_target_tyre = _tire_selector("ai_target_tyre_sel", default="HARD", disabled_tire=None)
 
         if st.button("Optimale Strategie berechnen", width='stretch'):
-            with st.spinner("KI simuliert Rennszenarien..."):
+            with st.spinner("KI simuliert Rennszenarien…"):
                 try:
-                    from strategy_optimizer import optimize_hybrid_strategy
-                    
                     result = optimize_hybrid_strategy(
-                        track_name=track, 
-                        total_laps=laps, 
-                        team=team, 
-                        start_compound=tire_start, 
-                        compound_2=ai_target_tyre, 
-                        air_temp=air_temp
+                        track_name=track, total_laps=laps, team=team,
+                        start_compound=tire_start, compound_2=ai_target_tyre,
+                        air_temp=air_temp,
                     )
-                    
-                    def fmt_time(sec):
+
+                    def _fmt(sec):
                         m, s = divmod(sec, 60)
-                        h, m = divmod(m, 60)
-                        if h > 0: return f"{int(h)}h {int(m)}m {s:.2f}s"
                         return f"{int(m)}m {s:.2f}s"
 
                     st.success(f"### 🏁 KI empfiehlt eine **{result['recommendation']}** Strategie!")
-                    st.write(f"⏱️ **Geschätzte Gesamtzeit:** {fmt_time(result['total_time'])}")
-                    
+                    st.write(f"⏱️ **Geschätzte Gesamtzeit:** {_fmt(result['total_time'])}")
+
+
                     if result['recommendation'] == "2-Stop":
                         st.info(f"💡 Ein 2-Stopp ist voraussichtlich **{result['time_saved']:.2f} Sek. schneller** als ein 1-Stopp.")
                         st.write(f"🛞 **Start:** {tire_start}")
@@ -602,7 +592,6 @@ def render_setup_page():
                         st.write(f"🛞 **Start:** {tire_start}")
                         st.write(f"🛑 **Stopp 1 (Runde {result['pit1_lap']}):** Wechsel auf {result['pit1_tyre']}")
                         st.write("🏁 Durchfahren bis ins Ziel.")
-                        
                 except Exception as exc:
                     st.error(f"Simulationsfehler: {exc}")
 

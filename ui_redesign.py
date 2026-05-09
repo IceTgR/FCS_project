@@ -750,8 +750,9 @@ def _race_fragment():
         st.session_state.lap_start_time  = time.time()
         st.session_state.lap_started_for = current_lap
 
+    sim_speed = st.session_state.get("sim_speed", 5)
     elapsed   = time.time() - st.session_state.lap_start_time
-    remaining = max(0.0, 5.0 - elapsed)
+    remaining = max(0.0, sim_speed - elapsed)
 
     if remaining <= 0:
         roll_safety_event()
@@ -808,8 +809,15 @@ def _race_fragment():
             </div>
             """, unsafe_allow_html=True)
 
-        # Countdown ÜBER dem Pitstop-Label
+        # Countdown + Geschwindigkeitsregler
         st.info(f"⏱  Automatisch weiter in **{remaining:.1f}s**")
+        st.slider(
+            "Simulationsgeschwindigkeit",
+            min_value=1, max_value=15, step=1,
+            format="%ds",
+            key="sim_speed",
+            label_visibility="collapsed",
+        )
 
         st.markdown('<div class="section-label">REIFEN FÜR PITSTOP</div>', unsafe_allow_html=True)
         _tire_selector("pitstop_tire_choice", default="SOFT", disabled_tire=player.tire)

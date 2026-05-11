@@ -6,8 +6,14 @@ import numpy as np
 import os
 
 
+@st.cache_resource
 def load_track_model(track_name, condition="dry"):
-    """Lädt ML-Modell und Feature-Spalten für die angegebene Strecke."""
+    """Lädt ML-Modell und Feature-Spalten für die angegebene Strecke.
+
+    Mit @st.cache_resource gecacht: Modell wird einmalig von Disk geladen
+    und danach im Arbeitsspeicher gehalten – spart bei jeder Simulation
+    wiederholtes joblib.load().
+    """
     # Leerzeichen → Unterstrich für Dateinamen.
     track_id = track_name.replace(' ', '_')
 

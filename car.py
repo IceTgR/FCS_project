@@ -1,9 +1,8 @@
 """Car-Klasse für einen F1-Rennwagen: Rundenzeit-Vorhersage, Reifenverschleiß und Boxenstopp-Logik."""
 
-import joblib
 import pandas as pd
-import os
 import random
+from strategy_optimizer import load_track_model
 
 class Car:
     """Repräsentiert einen F1-Rennwagen mit Leistung und Rennhistorie."""
@@ -245,12 +244,8 @@ class Car:
         """Sagt die Rundenzeit per ML-Modell vorher und wendet Outlap- und Verschleiß-Aufschläge an."""
 
         if not is_raining:
-            track_id = self.track.replace(' ', '_')
-            model_path = f'models/dry/rf_{track_id}.pkl'
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Kein Modell für Strecke '{self.track}' gefunden. Bitte zuerst trainieren.")
-            model = joblib.load(model_path)
-            saved_cols = joblib.load(f'models/dry/cols_{track_id}.pkl')
+            # Gecachtes Modell verwenden (via @st.cache_resource in strategy_optimizer).
+            model, saved_cols = load_track_model(self.track, "dry")
 
             # Live-Daten zum Modellinput ergänzen.
             row = {

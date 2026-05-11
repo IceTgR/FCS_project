@@ -642,14 +642,6 @@ def _do_pit(player, total_laps):
         if st.session_state.safety_event_status == 'SAFETYCAR':
             compress_sc_field(player, st.session_state.opponents)
     resolve_safety_event()
-    # Strategie für neuen Reifen nachladen (gecacht → sofort verfügbar).
-    try:
-        st.session_state.ki_strategy = find_best_overall_strategy(
-            st.session_state.track, total_laps, player.team,
-            new_tire, st.session_state.air_temp,
-        )
-    except Exception:
-        st.session_state.ki_strategy = None
     st.session_state.lap_start_time  = time.time()
     st.session_state.lap_started_for = player.lap
     st.rerun(scope="app")
@@ -704,7 +696,7 @@ def _race_summary(player, total_laps, opponents):
                 .encode(
                     x=alt.X("Runde:Q", scale=alt.Scale(domain=[1, total_laps], clamp=True), title="Runde"),
                     y=alt.Y("Rundenzeit:Q", scale=alt.Scale(zero=False), title="Zeit (s)"),
-                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N"],
+                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N", "Reifenalter:Q"],
                 )
                 .properties(width="container", height=220)
                 .interactive(bind_y=False)
@@ -916,7 +908,7 @@ def _race_fragment():
                 .encode(
                     x=alt.X("Runde:Q", scale=alt.Scale(domain=[1, total_laps], clamp=True), title="Runde"),
                     y=alt.Y("Rundenzeit:Q", scale=alt.Scale(zero=False), title="Zeit (s)"),
-                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N"],
+                    tooltip=["Runde:Q", alt.Tooltip("Rundenzeit:Q", format=".3f", title="Zeit (s)"), "Reifen:N", "Reifenalter:Q"],
                 )
                 .properties(width="container", height=160)
                 .interactive(bind_y=False)

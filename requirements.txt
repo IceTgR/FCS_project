@@ -1,4 +1,4 @@
-# add every additional library we need to run the app here
+# jede zusätzliche library die wir benötigen, damit die App funktioniert
 streamlit
 pandas
 fastf1
